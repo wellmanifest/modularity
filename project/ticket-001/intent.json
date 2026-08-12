@@ -1,0 +1,104 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-001",
+  "summary": "Define Modularity DSL core standard",
+  "workstream": "integration",
+  "classification": {
+    "kind": "FEATURE",
+    "priority": "P2",
+    "origin": "requested"
+  },
+  "delivery": {
+    "acceptedBaseSha": "653e677e508132be30b97bcbba48599c902437ed",
+    "targetBranch": "main",
+    "outcome": "Modularity DSL v1 has a closed language-neutral schema, stable semantics, diagnostics, and immutable bindings to published source standards.",
+    "nonGoals": [
+      "Implement composition execution or repository mutation",
+      "Treat a URI, Twin observation, DSL document, LLM proposal, or POA capability as authority",
+      "Claim the unpublished local POA draft as a normative immutable dependency",
+      "Add runtime dependencies or network-dependent validation",
+      "Merge without independent trusted current-head approval"
+    ],
+    "complexity": "S",
+    "estimatedMinutes": 25,
+    "budgets": {
+      "maxImplementationFiles": 5,
+      "maxAffectedComponents": 2,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Use a closed canonical JSON AST whose repository revisions and contract digests are immutable, while keeping execution and authority resolution outside the descriptive standard.",
+      "components": [
+        {
+          "name": "modularity-contract",
+          "paths": [
+            "docs/MODULARITY.md",
+            "docs/schemas/modularity-workspace.schema.v1.json",
+            "docs/errors/catalog.json"
+          ]
+        },
+        {
+          "name": "standard-bindings",
+          "paths": [
+            "docs/references/standards.json",
+            "docs/dsl-manifest.json"
+          ]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Revert the five implementation artifacts while preserving bootstrap and ticket evidence."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-01",
+        "commands": ["review docs/MODULARITY.md against the pinned DSL, Lifecycle and Twin standards"],
+        "evidence": "project/ticket-001/ai-codex-logs.txt"
+      },
+      {
+        "criterion": "AC-02",
+        "commands": ["python3 -m json.tool docs/schemas/modularity-workspace.schema.v1.json"],
+        "evidence": "project/ticket-001/ai-codex-logs.txt"
+      },
+      {
+        "criterion": "AC-03",
+        "commands": ["python3 -m json.tool docs/references/standards.json"],
+        "evidence": "project/ticket-001/ai-codex-logs.txt"
+      },
+      {
+        "criterion": "AC-04",
+        "commands": ["python3 -m json.tool docs/errors/catalog.json"],
+        "evidence": "project/ticket-001/ai-codex-logs.txt"
+      },
+      {
+        "criterion": "AC-05",
+        "commands": ["python3 ../../wellmanifest/dsl/src/dsl_check.py validate --root . docs/dsl-manifest.json", "./project/governance-check.sh --actor agent --base 653e677e508132be30b97bcbba48599c902437ed --head HEAD", "git diff --check"],
+        "evidence": "project/ticket-001/ai-codex-logs.txt"
+      }
+    ]
+  },
+  "allowedPaths": [
+    "project/ticket-001/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "docs/MODULARITY.md",
+    "docs/schemas/modularity-workspace.schema.v1.json",
+    "docs/errors/catalog.json",
+    "docs/references/standards.json",
+    "docs/dsl-manifest.json"
+  ],
+  "forbiddenPaths": ["project/ticket-*/user-*.md"],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null
+}

@@ -1,0 +1,347 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://subactor.dev/schemas/modularity-workspace/v1",
+  "title": "Subactor Modularity Workspace v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "id",
+    "version",
+    "owners",
+    "standards",
+    "modules",
+    "links",
+    "policies",
+    "conformance"
+  ],
+  "properties": {
+    "$schema": { "type": "string", "format": "uri" },
+    "schema": { "const": "subactor.modularity/workspace/v1" },
+    "id": { "$ref": "#/$defs/identifier" },
+    "version": { "$ref": "#/$defs/semver" },
+    "description": { "type": "string", "minLength": 1, "maxLength": 1000 },
+    "owners": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/owner" }
+    },
+    "standards": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/standardBinding" }
+    },
+    "modules": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/module" }
+    },
+    "links": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/link" }
+    },
+    "policies": { "$ref": "#/$defs/policies" },
+    "analysisScope": { "$ref": "#/$defs/analysisScope" },
+    "conformance": { "$ref": "#/$defs/conformance" }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
+    },
+    "revision": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+$"
+    },
+    "owner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": { "enum": ["repository", "team", "person"] },
+        "id": { "type": "string", "minLength": 1, "maxLength": 200 }
+      }
+    },
+    "standardBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "relation", "status"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "relation": { "enum": ["normative", "informative"] },
+        "status": { "enum": ["published", "draft"] },
+        "repository": { "type": "string", "format": "uri" },
+        "revision": { "$ref": "#/$defs/revision" },
+        "artifact": { "$ref": "#/$defs/relativePath" },
+        "note": { "type": "string", "minLength": 1, "maxLength": 1000 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "relation": { "const": "normative" } } },
+          "then": {
+            "required": ["repository", "revision", "artifact"],
+            "properties": { "status": { "const": "published" } }
+          }
+        },
+        {
+          "if": { "properties": { "status": { "const": "draft" } } },
+          "then": {
+            "properties": { "relation": { "const": "informative" } },
+            "not": { "required": ["revision"] }
+          }
+        }
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "revision"],
+      "properties": {
+        "repository": { "type": "string", "format": "uri" },
+        "revision": { "$ref": "#/$defs/revision" },
+        "path": { "$ref": "#/$defs/relativePath" },
+        "manifest": { "$ref": "#/$defs/relativePath" }
+      }
+    },
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "uri", "kind", "version", "digest"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "uri": { "type": "string", "format": "uri" },
+        "kind": {
+          "enum": [
+            "dsl",
+            "json-schema",
+            "protobuf",
+            "lifecycle",
+            "poa-capability",
+            "twin-trait",
+            "other"
+          ]
+        },
+        "version": { "$ref": "#/$defs/semver" },
+        "digest": { "$ref": "#/$defs/digest" },
+        "path": { "$ref": "#/$defs/relativePath" }
+      }
+    },
+    "stateNone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role"],
+      "properties": { "role": { "const": "none" } }
+    },
+    "stateOwner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "domain"],
+      "properties": {
+        "role": { "const": "owner" },
+        "domain": { "$ref": "#/$defs/identifier" }
+      }
+    },
+    "stateProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "domain", "owner"],
+      "properties": {
+        "role": { "const": "projection" },
+        "domain": { "$ref": "#/$defs/identifier" },
+        "owner": { "$ref": "#/$defs/identifier" }
+      }
+    },
+    "module": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "owners",
+        "layer",
+        "lifecycle",
+        "source",
+        "state",
+        "contracts"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "owners": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/owner" }
+        },
+        "layer": {
+          "enum": ["foundation", "domain", "application", "interface", "deployment"]
+        },
+        "lifecycle": {
+          "enum": ["experimental", "stable", "deprecated", "retired"]
+        },
+        "source": { "$ref": "#/$defs/source" },
+        "state": {
+          "oneOf": [
+            { "$ref": "#/$defs/stateNone" },
+            { "$ref": "#/$defs/stateOwner" },
+            { "$ref": "#/$defs/stateProjection" }
+          ]
+        },
+        "contracts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/contract" }
+        }
+      }
+    },
+    "generation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generator", "outputContract"],
+      "properties": {
+        "generator": { "$ref": "#/$defs/identifier" },
+        "outputContract": { "type": "string", "format": "uri" }
+      }
+    },
+    "link": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "from", "to", "contract", "mode"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "from": { "$ref": "#/$defs/identifier" },
+        "to": { "$ref": "#/$defs/identifier" },
+        "contract": { "type": "string", "format": "uri" },
+        "mode": { "enum": ["link", "generate", "observe", "invoke"] },
+        "authorityRef": {
+          "type": "string",
+          "pattern": "^authority://[a-z0-9][a-z0-9.-]*(?:/[A-Za-z0-9._~-]+)+$"
+        },
+        "generation": { "$ref": "#/$defs/generation" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "mode": { "const": "invoke" } } },
+          "then": { "required": ["authorityRef"] },
+          "else": { "not": { "required": ["authorityRef"] } }
+        },
+        {
+          "if": { "properties": { "mode": { "const": "generate" } } },
+          "then": { "required": ["generation"] },
+          "else": { "not": { "required": ["generation"] } }
+        }
+      ]
+    },
+    "policies": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unknownFields",
+        "cycles",
+        "layerDirection",
+        "contractOwnership",
+        "stateOwnership",
+        "authority",
+        "twinAuthority",
+        "llmAuthority",
+        "allowDeprecated"
+      ],
+      "properties": {
+        "unknownFields": { "const": "reject" },
+        "cycles": { "const": "reject" },
+        "layerDirection": { "const": "higher-to-same-or-lower" },
+        "contractOwnership": { "const": "single-exporter" },
+        "stateOwnership": { "const": "single-writer" },
+        "authority": { "const": "external-reference-only" },
+        "twinAuthority": { "const": "observational-only" },
+        "llmAuthority": { "const": "propose-only" },
+        "allowDeprecated": { "type": "boolean" }
+      }
+    },
+    "analysisScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["includePaths", "excludePaths", "managedPaths", "generatedPaths", "llm"],
+      "properties": {
+        "includePaths": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/relativePath" }
+        },
+        "excludePaths": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/relativePath" }
+        },
+        "managedPaths": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/relativePath" }
+        },
+        "generatedPaths": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/relativePath" }
+        },
+        "llm": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "inputPolicy",
+            "maxPromptTokens",
+            "maxFindingsPerBatch",
+            "wholeGraphPolicy",
+            "requireProvenance"
+          ],
+          "properties": {
+            "inputPolicy": { "const": "intent-diff-and-findings" },
+            "maxPromptTokens": { "type": "integer", "minimum": 4096, "maximum": 200000 },
+            "maxFindingsPerBatch": { "type": "integer", "minimum": 1, "maximum": 200 },
+            "wholeGraphPolicy": { "const": "reject" },
+            "requireProvenance": { "const": true }
+          }
+        }
+      }
+    },
+    "conformance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["levels", "commands"],
+      "properties": {
+        "levels": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["document", "graph", "standards", "interfaces", "advisory"]
+          }
+        },
+        "commands": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1, "maxLength": 1000 }
+          }
+        }
+      }
+    }
+  }
+}

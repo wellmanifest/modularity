@@ -1,0 +1,40 @@
+# ticket-001 validation log
+
+## 2026-08-12 deterministic contract checks
+
+- `python3 -m json.tool` passed for the ticket intent, canonical schema, error
+  catalog, standard references and DSL manifest.
+- `Draft202012Validator.check_schema` passed.
+- In-memory fixtures proved acceptance of a valid workspace and rejection of a
+  mutable revision, authority on a non-invocation link and a shell-string
+  conformance command.
+- Reference inspection proved three exact normative revisions and the explicit
+  informative/unpublished POA status.
+- Pinned Wellmanifest DSL checker result: `DSL-PASS: passed (0 errors)`.
+- Adopted governance gate result after the plan/implementation split and
+  portable-path correction: `GOV-PASS: passed (0 errors, 0 warnings)`.
+- `git diff --check` passed for the complete ticket branch.
+
+## 2026-08-12 todo2code/SubLLM semantic audit
+
+- Exact reviewed head: `456b1381fb34feb57321b359099e75d1582e3c5b`.
+- todo2code runtime: `0.5.0` from `semcod/todo2code` main
+  `0dfb82c3c6b2d6af795c5a3263ca9e24a5652560`.
+- SubLLM route: application `todo2code`, function `semantic`, provider
+  `openrouter`, policy model `glm-5.2`, wire model `z-ai/glm-5.2`, priority 20.
+- Successful graph fingerprint:
+  `ff57d7f7f9872bc2fe7e6d5e87806bdbbe197b0bfbafed87eb938b9896f87ec6`.
+- NL, TODO/CHANGELOG, documentation, communication and summary stages all
+  reported `succeeded / llm / degraded=false`; task synthesis was explicitly
+  disabled after a separate `require-llm` run failed its typed contract.
+- Reported OpenRouter response cost was approximately USD 0.55. The summary
+  sent roughly 170k input tokens twice because managed governance AST inflated
+  the graph; this directly motivated the bounded `analysisScope` contract.
+- Four blocking diagnostics were reviewed. Three were false conflicts caused
+  by assigning opposite polarity to identical or semantically identical POA
+  sentences. The fourth correctly identified weak evidence linkage for the
+  completed bootstrap TODO; the TODO now names commit `653e677e...`.
+- The suggested creation of `errors/catalog.json` was rejected because the
+  actual owned path is `docs/errors/catalog.json`. Suggested edits to TODO in
+  place of implementing the future validator/profile tickets were also
+  rejected as ungrounded.

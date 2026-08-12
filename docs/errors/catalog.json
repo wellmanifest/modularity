@@ -1,0 +1,181 @@
+{
+  "schema": "subactor.modularity/errors/v1",
+  "version": "0.1.0",
+  "errors": [
+    {
+      "code": "MOD-JSON-001",
+      "severity": "error",
+      "rule": "canonical-json",
+      "message": "The canonical document is not valid UTF-8 JSON.",
+      "remediation": "Encode the document as UTF-8 JSON and remove comments, trailing commas, and duplicate object keys."
+    },
+    {
+      "code": "MOD-SCHEMA-001",
+      "severity": "error",
+      "rule": "closed-schema",
+      "message": "The canonical document violates the closed Modularity v1 schema.",
+      "remediation": "Use only declared fields and values from modularity-workspace.schema.v1.json."
+    },
+    {
+      "code": "MOD-ID-001",
+      "severity": "error",
+      "rule": "unique-module-and-link-identifiers",
+      "message": "A module or composition-link identifier is duplicated.",
+      "remediation": "Assign a stable identifier that is unique within the workspace."
+    },
+    {
+      "code": "MOD-STANDARD-001",
+      "severity": "error",
+      "rule": "immutable-normative-standard",
+      "message": "A normative standard lacks a published repository, exact revision, or artifact path.",
+      "remediation": "Pin the published standard to its repository and full 40-character commit, or classify the draft as informative."
+    },
+    {
+      "code": "MOD-SOURCE-001",
+      "severity": "error",
+      "rule": "immutable-module-source",
+      "message": "A module source is not bound to an exact lowercase 40-character Git revision.",
+      "remediation": "Resolve the branch or tag to a reviewed commit SHA and record that immutable revision."
+    },
+    {
+      "code": "MOD-PATH-001",
+      "severity": "error",
+      "rule": "repository-relative-path",
+      "message": "A path is absolute, traverses a parent directory, or uses a non-portable separator.",
+      "remediation": "Use a forward-slash repository-relative path without '..' segments."
+    },
+    {
+      "code": "MOD-CONTRACT-001",
+      "severity": "error",
+      "rule": "single-contract-exporter",
+      "message": "A contract URI is exported more than once or a module-local contract identifier is duplicated.",
+      "remediation": "Keep one semantic owner for the contract and consume it through composition links."
+    },
+    {
+      "code": "MOD-CONTRACT-002",
+      "severity": "error",
+      "rule": "resolved-provider-contract",
+      "message": "A composition link references a contract not exported by its provider module.",
+      "remediation": "Reference the exact URI exported by the link's 'to' module."
+    },
+    {
+      "code": "MOD-DIGEST-001",
+      "severity": "error",
+      "rule": "canonical-contract-digest",
+      "message": "A local contract artifact does not match its declared SHA-256 digest.",
+      "remediation": "Restore the canonical bytes or update the digest and compatibility version through the owning module."
+    },
+    {
+      "code": "MOD-LINK-001",
+      "severity": "error",
+      "rule": "resolved-link-endpoints",
+      "message": "A composition link references an unknown module endpoint.",
+      "remediation": "Declare both endpoint modules or remove the stale link."
+    },
+    {
+      "code": "MOD-LINK-002",
+      "severity": "error",
+      "rule": "no-self-link",
+      "message": "A module links to itself.",
+      "remediation": "Keep internal composition inside the owning module or split it into independently owned modules."
+    },
+    {
+      "code": "MOD-GRAPH-001",
+      "severity": "error",
+      "rule": "acyclic-module-graph",
+      "message": "The module dependency graph contains a directed cycle.",
+      "remediation": "Extract a lower-level contract or move orchestration above the participating modules."
+    },
+    {
+      "code": "MOD-LAYER-001",
+      "severity": "error",
+      "rule": "higher-to-same-or-lower-layer",
+      "message": "A lower architectural layer depends on a higher layer.",
+      "remediation": "Invert the dependency through a lower-layer contract or move the consumer to the appropriate layer."
+    },
+    {
+      "code": "MOD-STATE-001",
+      "severity": "error",
+      "rule": "single-writer-state",
+      "message": "A state domain has zero or multiple declared owner modules.",
+      "remediation": "Declare exactly one owner and model every derived copy as a projection."
+    },
+    {
+      "code": "MOD-STATE-002",
+      "severity": "error",
+      "rule": "resolved-state-projection",
+      "message": "A state projection references a missing or mismatched owner.",
+      "remediation": "Point the projection at the sole owner of the same state domain."
+    },
+    {
+      "code": "MOD-AUTH-001",
+      "severity": "error",
+      "rule": "external-authority-reference",
+      "message": "Authority is missing from an invocation or embedded in a non-invocation composition.",
+      "remediation": "Use one opaque authority reference only on an 'invoke' link and resolve it outside the DSL."
+    },
+    {
+      "code": "MOD-COMPOSE-001",
+      "severity": "error",
+      "rule": "composition-mode-contract",
+      "message": "The composition mode is incompatible with the provider contract or lacks generation provenance.",
+      "remediation": "Observe Twin traits, invoke POA capabilities with authority, and bind generated outputs to their generator and contract."
+    },
+    {
+      "code": "MOD-LIFECYCLE-001",
+      "severity": "error",
+      "rule": "no-new-retired-dependency",
+      "message": "A composition link consumes a retired module.",
+      "remediation": "Remove the link or migrate to a non-retired replacement."
+    },
+    {
+      "code": "MOD-LIFECYCLE-002",
+      "severity": "error",
+      "rule": "explicit-deprecation-policy",
+      "message": "A composition link consumes a deprecated module while deprecation is disallowed.",
+      "remediation": "Migrate the dependency or explicitly accept deprecated modules for this bounded workspace."
+    },
+    {
+      "code": "MOD-TWIN-001",
+      "severity": "error",
+      "rule": "twin-observational-boundary",
+      "message": "A Twin trait is consumed using a mode other than observation.",
+      "remediation": "Use 'observe'; expose a separate command capability for effects and invoke it through authority."
+    },
+    {
+      "code": "MOD-POA-001",
+      "severity": "error",
+      "rule": "poa-capability-boundary",
+      "message": "A POA capability is not invoked through an external authority reference.",
+      "remediation": "Use 'invoke' with a separately resolvable grant or intent bound to the exact request and plan."
+    },
+    {
+      "code": "MOD-CONFORMANCE-001",
+      "severity": "error",
+      "rule": "argv-only-conformance",
+      "message": "A conformance command is not a non-empty argv array.",
+      "remediation": "Represent the executable and each argument as separate array elements; do not use shell strings."
+    },
+    {
+      "code": "MOD-ANALYSIS-001",
+      "severity": "error",
+      "rule": "bounded-analysis-scope",
+      "message": "The analysis scope is empty, overlaps managed/generated classifications, or excludes an owned changed contract.",
+      "remediation": "Keep owned changed contracts visible, separate managed from generated paths, and use repository-relative glob patterns."
+    },
+    {
+      "code": "MOD-LLM-001",
+      "severity": "error",
+      "rule": "budgeted-provenance-bound-llm-input",
+      "message": "An LLM input exceeds its declared budget, lacks provenance, or uses an unbounded whole-repository graph.",
+      "remediation": "Project ticket intent, changed contracts and deterministic findings into stable batches and validate every typed response before merging."
+    },
+    {
+      "code": "MOD-INTERNAL-001",
+      "severity": "critical",
+      "rule": "validator-integrity",
+      "message": "Validation stopped because of an unexpected internal failure.",
+      "remediation": "Preserve the input and failure evidence, fix the validator, and rerun without treating the document as conforming."
+    }
+  ]
+}

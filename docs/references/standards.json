@@ -1,0 +1,43 @@
+{
+  "schema": "subactor.modularity/standard-references/v1",
+  "generatedAt": "2026-08-12",
+  "standards": [
+    {
+      "id": "wellmanifest.dsl",
+      "relation": "normative",
+      "status": "published",
+      "repository": "https://github.com/wellmanifest/dsl",
+      "revision": "550e5f441c709e15f2679c1af151352d1eba2f1e",
+      "artifact": "spec/DSL_STANDARD.md",
+      "usage": "Canonical DSL ownership, hashing, effects, findings, LLM boundaries and conformance."
+    },
+    {
+      "id": "subactor.lifecycle",
+      "relation": "normative",
+      "status": "published",
+      "repository": "https://github.com/subactor/lifecycle",
+      "revision": "f3b8e13eb17128fd0f3ff05ac45fc99c99c470c4",
+      "artifact": "spec/LIFECYCLE_DSL.md",
+      "usage": "Deterministic lifecycle profiles, evidence identifiers and transition diagnostics."
+    },
+    {
+      "id": "subactor.twin",
+      "relation": "normative",
+      "status": "published",
+      "repository": "https://github.com/subactor/twin",
+      "revision": "edfb690d4523643d6d2ea410a943b0a4a3ddd078",
+      "artifact": "spec/TWIN_STANDARD.md",
+      "usage": "Language-neutral CQRS and Event Sourcing traits, URI processes, observations and interface bindings."
+    },
+    {
+      "id": "wellmanifest.poa",
+      "relation": "informative",
+      "status": "draft",
+      "repository": null,
+      "revision": null,
+      "artifact": "docs/ARCHITECTURE.md",
+      "usage": "Local design input for Process-Oriented Architecture capability resolution, dry planning, separate grants, bounded execution and receipts.",
+      "publicationBlocker": "The local wellmanifest/poa project has no Git commit and no GitHub repository; it cannot be an immutable normative dependency."
+    }
+  ]
+}
