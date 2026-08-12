@@ -29,6 +29,9 @@ declared composition.
 - [x] AC-05: The Wellmanifest DSL manifest owns all five implementation
   artifacts, digest-binds the four non-self-referential artifacts, and passes
   the pinned DSL checker.
+- [x] AC-06: Optional analysis scope separates owned, managed and generated
+  paths and requires budgeted, provenance-bound LLM batches rather than an
+  unbounded whole-repository graph.
 
 ## Risks
 

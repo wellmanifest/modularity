@@ -157,6 +157,20 @@
       "remediation": "Represent the executable and each argument as separate array elements; do not use shell strings."
     },
     {
+      "code": "MOD-ANALYSIS-001",
+      "severity": "error",
+      "rule": "bounded-analysis-scope",
+      "message": "The analysis scope is empty, overlaps managed/generated classifications, or excludes an owned changed contract.",
+      "remediation": "Keep owned changed contracts visible, separate managed from generated paths, and use repository-relative glob patterns."
+    },
+    {
+      "code": "MOD-LLM-001",
+      "severity": "error",
+      "rule": "budgeted-provenance-bound-llm-input",
+      "message": "An LLM input exceeds its declared budget, lacks provenance, or uses an unbounded whole-repository graph.",
+      "remediation": "Project ticket intent, changed contracts and deterministic findings into stable batches and validate every typed response before merging."
+    },
+    {
       "code": "MOD-INTERNAL-001",
       "severity": "critical",
       "rule": "validator-integrity",

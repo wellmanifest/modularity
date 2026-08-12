@@ -33,17 +33,17 @@
     {
       "path": "docs/schemas/modularity-workspace.schema.v1.json",
       "role": "normative-source",
-      "digest": "sha256:ac0b0ff158c50e521dc524cdeafc3709748193e131fda74672e501af5f0df0a7"
+      "digest": "sha256:98db51af5b17e9a480f587f462da52aafd70d8b40ae87d873d7a42fdd4fd5a68"
     },
     {
       "path": "docs/MODULARITY.md",
       "role": "documentation",
-      "digest": "sha256:11ceaa100aebcf3e34d0c062aa9b97976d0c6e9ac6eef3a10340f9db77ab4f89"
+      "digest": "sha256:d34b9ea576496ac1cc17a30f3eec95e94f0765a9604c640b5616da27303f00ff"
     },
     {
       "path": "docs/errors/catalog.json",
       "role": "schema",
-      "digest": "sha256:c2224c7055f9ca80e0eb942d182b34b69f352433c415419223874a81762338a5"
+      "digest": "sha256:0773118ab578d2535fe9276f1b95b8c45e3164190116487ae019b17085b2e95a"
     },
     {
       "path": "docs/references/standards.json",

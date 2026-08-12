@@ -3,7 +3,8 @@
 ## Active
 
 - [x] Adopt immutable `new-project` governance at published revision
-  `6800f0138bc9063eb2dacb0a8b797dedcafb7952`.
+  `6800f0138bc9063eb2dacb0a8b797dedcafb7952`; repository bootstrap evidence:
+  commit `653e677e508132be30b97bcbba48599c902437ed`.
 - [ ] [`ticket-001`](project/ticket-001/README.md): define Modularity DSL v1,
   its closed schema, stable errors and immutable standard bindings.
 

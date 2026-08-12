@@ -250,7 +250,43 @@ Every workspace declares the following fail-closed policies:
 are constants in V1; weakening one requires a future major standard version,
 not a workspace-local override.
 
-## 13. Deterministic validation
+## 13. Cost-aware analysis scope
+
+A workspace MAY declare `analysisScope` to keep repository analysis precise
+and bounded. It contains:
+
+- `includePaths`: the repository-owned material eligible for analysis;
+- `excludePaths`: caches, vendored assets, run artifacts, and other irrelevant
+  material;
+- `managedPaths`: policy or generated governance owned by an external pinned
+  standard;
+- `generatedPaths`: rebuildable projections that are not source intent;
+- an `llm` budget and input policy.
+
+Paths use repository-relative glob patterns. The effective include set MUST NOT
+be empty. A path MUST NOT be classified as both managed and generated. A local
+module contract, its owner manifest, or any changed artifact named by a digest
+MUST NOT disappear behind an exclusion.
+
+Exclusion applies only to semantic extraction and refactoring proposals.
+Deterministic integrity, security, governance, digest, and changed-path checks
+still inspect the paths they own. Managed code MAY be verified against its
+pinned source but SHOULD NOT be counted as an AST implementation fact of the
+adopting repository. Generated paths MAY be checked for reproducibility but
+SHOULD NOT be offered as the primary refactoring target.
+
+The V1 LLM policy is `intent-diff-and-findings`: a model receives the bounded
+ticket intent, changed contract projection, deterministic findings, and
+evidence digests instead of an unbounded whole-repository graph. Inputs MUST be
+provenance-bound. When `maxPromptTokens` or `maxFindingsPerBatch` would be
+exceeded, a consumer MUST create deterministic batches and merge validated
+typed results. It MUST NOT truncate a structured response or silently omit
+required fields. `wholeGraphPolicy` is `reject`.
+
+This scope is advisory for work selection, not authority. LLM findings remain
+proposals and cannot hide blocking deterministic findings.
+
+## 14. Deterministic validation
 
 A conforming validator performs, in order:
 
@@ -262,7 +298,8 @@ A conforming validator performs, in order:
 6. single-writer state validation;
 7. lifecycle and Twin restrictions;
 8. layer-direction and directed-cycle checks;
-9. deterministic diagnostic sorting.
+9. analysis-scope overlap, contract visibility, and LLM budget checks;
+10. deterministic diagnostic sorting.
 
 Diagnostics use [`errors/catalog.json`](errors/catalog.json). Each finding has
 `code`, `severity`, `path`, and `message`. Findings sort by path, code, then
@@ -273,7 +310,7 @@ LLM review is an additional advisory producer. It MUST identify the repository
 and exact revision it analyzed, bind its input digest, and distinguish evidence
 from inference. It cannot replace any step above.
 
-## 14. Conformance levels
+## 15. Conformance levels
 
 | Level | Requirement |
 | --- | --- |
@@ -286,7 +323,7 @@ from inference. It cannot replace any step above.
 A tool MUST report only the levels it actually evaluated. Absence of evidence
 is not success.
 
-## 15. Evolution
+## 16. Evolution
 
 Additive optional behavior requires a minor release. Tightening or changing an
 existing semantic rule requires a major release unless it only corrects a

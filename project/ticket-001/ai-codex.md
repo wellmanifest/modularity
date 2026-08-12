@@ -35,9 +35,16 @@ inflation while remaining usable from any implementation language.
   local POA draft as informative with no fabricated revision.
 - Added a Wellmanifest DSL manifest that owns all five implementation artifacts
   and digest-binds every non-self-referential artifact.
+- Added a cost-aware analysis scope after todo2code showed that externally
+  managed governance AST and an unbounded graph create noisy diagnostics,
+  oversized prompts and truncated structured output.
 
 ## Blockers
 
 - None inside the recorded intent; proceed without a second confirmation.
 - New authority remains required for destructive action, secret access, new
   external coordination, material objective expansion and trusted merge.
+- todo2code task synthesis is not usable for this graph: two Z.AI responses
+  each hit the 6000-token output cap and omitted required `proposals`. The
+  successful review therefore kept synthesis disabled without fallback while
+  retaining LLM extraction, communication, documentation and conclusions.
