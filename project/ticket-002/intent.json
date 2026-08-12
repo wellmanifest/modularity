@@ -1,0 +1,84 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-002",
+  "summary": "Implement deterministic Modularity validator",
+  "workstream": "application",
+  "classification": {
+    "kind": "FEATURE",
+    "priority": "P2",
+    "origin": "requested"
+  },
+  "delivery": {
+    "acceptedBaseSha": "a44645587720f26ed3ef8ab1b8259f65512eba68",
+    "targetBranch": "main",
+    "outcome": "A dependency-free CLI validates Modularity v1 documents and emits deterministic stable diagnostics for document and graph conformance.",
+    "nonGoals": [
+      "Fetch module repositories or normative standards",
+      "Resolve authority references or execute conformance commands",
+      "Add an ecosystem reference profile",
+      "Modify the schema, error catalog, or other ticket-001 artifacts",
+      "Merge without independent trusted current-head approval"
+    ],
+    "complexity": "S",
+    "estimatedMinutes": 25,
+    "budgets": {
+      "maxImplementationFiles": 2,
+      "maxAffectedComponents": 2,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Implement strict document and semantic validation with the Python standard library, loading the published schema and error catalog as read-only contracts.",
+      "components": [
+        {"name": "validator", "paths": ["src/modularity.py"]},
+        {"name": "validator-tests", "paths": ["tests/test_modularity.py"]}
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {"impact": "none", "states": [], "evidence": []},
+      "rollback": "Revert the two implementation files while preserving ticket evidence and the ticket-001 standard."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-01",
+        "commands": ["PYTHONPATH=src python -m unittest discover -s tests -v"],
+        "evidence": "project/ticket-002/ai-codex-logs.txt"
+      },
+      {
+        "criterion": "AC-02",
+        "commands": ["PYTHONPATH=src python -m unittest discover -s tests -v"],
+        "evidence": "project/ticket-002/ai-codex-logs.txt"
+      },
+      {
+        "criterion": "AC-03",
+        "commands": ["PYTHONPATH=src python -m unittest discover -s tests -v"],
+        "evidence": "project/ticket-002/ai-codex-logs.txt"
+      },
+      {
+        "criterion": "AC-04",
+        "commands": ["PYTHONPATH=src python -m modularity --help", "python -m py_compile src/modularity.py tests/test_modularity.py"],
+        "evidence": "project/ticket-002/ai-codex-logs.txt"
+      },
+      {
+        "criterion": "AC-05",
+        "commands": ["./project/governance-check.sh --actor agent --base a44645587720f26ed3ef8ab1b8259f65512eba68 --head HEAD", "git diff --check"],
+        "evidence": "project/ticket-002/ai-codex-logs.txt"
+      }
+    ]
+  },
+  "allowedPaths": [
+    "project/ticket-002/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "src/modularity.py",
+    "tests/test_modularity.py"
+  ],
+  "forbiddenPaths": ["project/ticket-*/user-*.md"],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null
+}

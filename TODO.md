@@ -10,10 +10,11 @@
   - [x] Pass deterministic schema, DSL-manifest and governance validation.
   - [x] Complete the LLM-assisted todo2code/SubLLM semantic audit.
   - [x] Obtain trusted exact-head review, merge, and verify branch deletion.
+- [ ] [`ticket-002`](project/ticket-002/README.md): implement dependency-free,
+  deterministic document and semantic validation with stable `MOD-*` errors.
 
 ## Later
 
-- [ ] Implement deterministic Modularity DSL validation and negative fixtures.
 - [ ] Add reference profiles for the Subactor repository ecosystem.
 - [ ] Validate intent and refactoring opportunities with todo2code using LLM
   analysis through SubLLM when it provides a stronger result.
