@@ -30,6 +30,19 @@ semantics into Modularity.
 - Confirmed that the local `wellmanifest/poa` checkout has no commit and that
   no `patterns` repository exists in the configured workspace; neither can be
   pinned.
+- Published a closed eight-module graph with ten exact contract digests and an
+  evidence guide that separates observed integration from recommended
+  composition.
+- Bound both profile artifacts into the Wellmanifest DSL manifest and passed
+  remote-revision, blob-digest, Modularity, DSL and governance validation.
+- Ran todo2code `0.5.0` in an isolated exact-head clone with every useful
+  semantic stage requiring LLM through SubLLM/OpenRouter `z-ai/glm-5.2`.
+- Rejected all generated plans: they addressed completed historic TODO items or
+  publication evidence that cannot exist until merge, and none identified a
+  defect in the profile content.
+- Retained one genuine tool-level observation: todo2code sent 97,662 prompt
+  tokens to summary despite the profile's 32,000-token `analysisScope`; the
+  standard is present, but todo2code does not yet enforce it.
 
 ## Blockers
 

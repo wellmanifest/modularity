@@ -3,7 +3,7 @@
 - **ID**: ticket-003
 - **Owner**: unresolved:human
 - **Status**: IN_PROGRESS
-- **Workflow state**: EDIT
+- **Workflow state**: VALIDATION
 - **Created**: 2026-08-12
 
 ## Goal and scope
@@ -17,16 +17,16 @@ link is an installed runtime dependency.
 
 ## Acceptance criteria
 
-- [ ] AC-01: Eight published repositories and ten contract artifacts are bound
+- [x] AC-01: Eight published repositories and ten contract artifacts are bound
   to full remote-main revisions and exact SHA-256 digests.
-- [ ] AC-02: The profile passes the dependency-free Modularity validator with
+- [x] AC-02: The profile passes the dependency-free Modularity validator with
   document, graph and standards conformance and no network access.
-- [ ] AC-03: The companion guide distinguishes observed integration evidence
+- [x] AC-03: The companion guide distinguishes observed integration evidence
   from recommended composition and maps DSL, Lifecycle, Twin, POA, CQRS/Event
   Sourcing, protobuf, CLI, safe shell, REST and MCP boundaries.
-- [ ] AC-04: Unpublished POA and the absent local `patterns` repository are
+- [x] AC-04: Unpublished POA and the absent local `patterns` repository are
   represented as explicit limitations, not fabricated immutable modules.
-- [ ] AC-05: The Wellmanifest DSL manifest owns and digest-binds both profile
+- [x] AC-05: The Wellmanifest DSL manifest owns and digest-binds both profile
   artifacts, and pinned DSL plus adopted governance checks pass.
 
 ## Risks
