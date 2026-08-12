@@ -19,8 +19,8 @@ inflation while remaining usable from any implementation language.
 2. Define the canonical module graph and its normative invariants.
 3. Publish a closed JSON Schema and stable diagnostic catalog.
 4. Bind all artifacts in a Wellmanifest DSL manifest.
-5. Run deterministic and governance validation, then obtain an LLM-assisted
-   todo2code review in a later validator slice.
+5. Run deterministic and governance validation, then obtain LLM-assisted
+   todo2code analysis and trusted exact-head Validator review before merge.
 
 ## Actual changes
 
@@ -38,12 +38,15 @@ inflation while remaining usable from any implementation language.
 - Added a cost-aware analysis scope after todo2code showed that externally
   managed governance AST and an unbounded graph create noisy diagnostics,
   oversized prompts and truncated structured output.
+- Published pull request #1, obtained deterministic Validator approval with an
+  advisory `openrouter/z-ai/glm-5.2` review, and merged the exact approved head
+  as `45785bb760d98482395374a11cc651e5b2565696`.
+- Verified that automatic remote-branch deletion ran after merge and closed
+  this ticket only after the integrated `main` history existed.
 
 ## Blockers
 
-- None inside the recorded intent; proceed without a second confirmation.
-- New authority remains required for destructive action, secret access, new
-  external coordination, material objective expansion and trusted merge.
+- None. The bounded ticket outcome is integrated and independently reviewed.
 - todo2code task synthesis is not usable for this graph: two Z.AI responses
   each hit the 6000-token output cap and omitted required `proposals`. The
   successful review therefore kept synthesis disabled without fallback while

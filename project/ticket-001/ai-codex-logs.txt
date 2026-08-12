@@ -38,3 +38,20 @@
   actual owned path is `docs/errors/catalog.json`. Suggested edits to TODO in
   place of implementing the future validator/profile tickets were also
   rejected as ungrounded.
+
+## 2026-08-12 publication and closure
+
+- Pull request: `subactor/modularity#1`.
+- Required hosted check `governance / remote lifecycle` passed at exact head
+  `01144ef2860593f50ccadb433ad79699a4c0df78`.
+- Validator Agent run `31607145537` created an `APPROVED` review from
+  `ifuri-validator-agent[bot]` at that exact commit. Deterministic policy was
+  the trust root; five LLM chunks used `openrouter/z-ai/glm-5.2` with advisory
+  verdict `APPROVE` and no findings.
+- Pull request #1 was merged with history preservation as
+  `45785bb760d98482395374a11cc651e5b2565696`.
+- Repository branch lookup returned HTTP 404 for
+  `ticket/001-modularity-core` after merge, proving remote deletion.
+- Ticket closure is a follow-up governance-only change based on integrated
+  `main`; executable validation and reference profiles are intentionally not
+  smuggled into this closure.
