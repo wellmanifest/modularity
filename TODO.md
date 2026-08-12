@@ -14,7 +14,8 @@
   deterministic document and semantic validation with stable `MOD-*` errors.
   - [x] Preserve plan-first history and the two-file implementation budget.
   - [x] Pass unit, static, schema-equivalence and governance validation.
-  - [ ] Complete LLM-assisted intent review and trusted publication.
+  - [x] Complete LLM-assisted todo2code/SubLLM intent review.
+  - [ ] Obtain trusted exact-head review, merge and verify branch deletion.
 
 ## Later
 
