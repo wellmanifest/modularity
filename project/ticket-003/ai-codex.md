@@ -45,6 +45,13 @@ semantics into Modularity.
   standard is present, but todo2code does not yet enforce it.
 - Moved the still-active ticket to `PUBLICATION`; `DONE / DONE` remains
   reserved for a governance-only closure based on integrated `main`.
+- Published PR `subactor/modularity#5` after the hosted governance check and
+  trusted Validator App approval bound to exact head
+  `4341b6141e66837ab2cc41418b6030782b6b0f70`.
+- Preserved merge history in `0d8195bf2c95c006dd97dfce3510cf141660fc74`
+  and verified automatic deletion of the remote implementation branch.
+- Closed this ticket only in this governance-only follow-up based on the
+  integrated default branch.
 
 ## Blockers
 

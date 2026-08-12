@@ -87,3 +87,24 @@
   already implemented guide/manifest changes. No source patch was applied.
 - Manual comparison against the closed intent, exact source blobs and
   deterministic validator found no profile defect requiring a patch.
+
+## 2026-08-12 publication and closure
+
+- Pull request: `subactor/modularity#5`.
+- Required hosted check `governance / remote lifecycle` passed at exact head
+  `4341b6141e66837ab2cc41418b6030782b6b0f70`.
+- Validator Agent run `31612630635` created an `APPROVED` review from
+  `ifuri-validator-agent[bot]` at that exact commit. Deterministic policy was
+  the trust root. Advisory `openrouter/z-ai/glm-5.2` was attempted through
+  SubLLM but rejected because response scalar fields had invalid types.
+- A deliberate retry on the same frozen head, run `31612877657`, reproduced
+  the same structured-output failure. This identifies a Validator/LLM response
+  contract issue, not a missing SubLLM dependency or routing failure. The
+  successful todo2code review above independently exercised LLM semantics.
+- Pull request #5 merged with history preservation as
+  `0d8195bf2c95c006dd97dfce3510cf141660fc74`.
+- Repository branch lookup returned HTTP 404 for
+  `ticket/003-ecosystem-profile` after merge, proving automatic remote
+  deletion.
+- This follow-up contains governance closure only and is based on integrated
+  `main`.

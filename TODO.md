@@ -16,7 +16,7 @@
   - [x] Pass unit, static, schema-equivalence and governance validation.
   - [x] Complete LLM-assisted todo2code/SubLLM intent review.
   - [x] Obtain trusted exact-head review, merge and verify branch deletion.
-- [ ] [`ticket-003`](project/ticket-003/README.md): publish a validated,
+- [x] [`ticket-003`](project/ticket-003/README.md): publish a validated,
   digest-bound Subactor ecosystem modularity profile and evidence guide.
 
 ## Later
