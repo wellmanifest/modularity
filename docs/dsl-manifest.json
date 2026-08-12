@@ -1,0 +1,126 @@
+{
+  "$schema": "https://raw.githubusercontent.com/wellmanifest/dsl/550e5f441c709e15f2679c1af151352d1eba2f1e/schemas/dsl-manifest.schema.json",
+  "schema": "wellmanifest.dsl/manifest/v1",
+  "id": "subactor.modularity",
+  "name": "Subactor Modularity DSL",
+  "version": "0.1.0-dev",
+  "status": "experimental",
+  "purpose": "A language-neutral canonical module graph for composing independently owned repository contracts without duplicating semantics, authority, or state",
+  "domain": "software-modularity",
+  "owners": [
+    {
+      "kind": "repository",
+      "id": "github:subactor/modularity",
+      "responsibilities": ["semantics", "validation", "compatibility", "security"]
+    }
+  ],
+  "source": {
+    "repository": "https://github.com/subactor/modularity",
+    "path": "docs/schemas/modularity-workspace.schema.v1.json",
+    "declaredVersion": "1",
+    "canonical": "json-ast",
+    "mediaType": "application/schema+json",
+    "selectors": []
+  },
+  "ownedPaths": [
+    "docs/dsl-manifest.json",
+    "docs/MODULARITY.md",
+    "docs/schemas/**",
+    "docs/errors/**",
+    "docs/references/**"
+  ],
+  "artifacts": [
+    {
+      "path": "docs/schemas/modularity-workspace.schema.v1.json",
+      "role": "normative-source",
+      "digest": "sha256:ac0b0ff158c50e521dc524cdeafc3709748193e131fda74672e501af5f0df0a7"
+    },
+    {
+      "path": "docs/MODULARITY.md",
+      "role": "documentation",
+      "digest": "sha256:11ceaa100aebcf3e34d0c062aa9b97976d0c6e9ac6eef3a10340f9db77ab4f89"
+    },
+    {
+      "path": "docs/errors/catalog.json",
+      "role": "schema",
+      "digest": "sha256:c2224c7055f9ca80e0eb942d182b34b69f352433c415419223874a81762338a5"
+    },
+    {
+      "path": "docs/references/standards.json",
+      "role": "profile",
+      "digest": "sha256:1977051de70e3cd7e5329ec4301db29eafab72b575f66a4e9124683b968b74d5"
+    }
+  ],
+  "namespaces": [
+    { "prefix": "subactor", "uri": "https://subactor.dev/" },
+    { "prefix": "modularity", "uri": "modularity://workspace/" }
+  ],
+  "projections": [],
+  "lifecycle": {
+    "compatibility": "semver",
+    "stability": "experimental",
+    "breaking": "major",
+    "additive": "minor",
+    "fix": "patch"
+  },
+  "semantics": {
+    "effectModel": "descriptive",
+    "unknownPolicy": "reject",
+    "authoritySchema": null
+  },
+  "llm": {
+    "mode": "input",
+    "requestSchemas": ["docs/schemas/modularity-workspace.schema.v1.json"],
+    "responseSchemas": [],
+    "naturalLanguage": "forbidden",
+    "sourceSchema": null,
+    "modelAuthority": "propose-only",
+    "strict": true
+  },
+  "documentation": {
+    "commandRoot": "docs",
+    "errorRoot": "docs/ERROR",
+    "criticalRoot": "docs/CRITICAL",
+    "commands": ["MODULARITY"],
+    "errorCodes": [],
+    "criticalCodes": []
+  },
+  "findingPolicy": {
+    "schema": "wellmanifest.dsl/findings/v1",
+    "requiredProducers": ["subactor.modularity.validator"],
+    "securityProducers": ["subactor.modularity.validator"],
+    "blockingSeverities": ["error", "critical"],
+    "requireEvaluable": true,
+    "blockUnresolvedSecurity": true
+  },
+  "conformance": {
+    "levels": ["manifest", "contract", "llm-boundary"],
+    "commands": [
+      "python3 -m json.tool docs/schemas/modularity-workspace.schema.v1.json",
+      "python3 -m json.tool docs/errors/catalog.json",
+      "python3 -m json.tool docs/references/standards.json"
+    ],
+    "validExamples": [],
+    "invalidExamples": []
+  },
+  "mappings": [
+    {
+      "standard": "wellmanifest.dsl",
+      "version": "0.1.0-dev",
+      "relation": "implements",
+      "uri": "https://github.com/wellmanifest/dsl/tree/550e5f441c709e15f2679c1af151352d1eba2f1e"
+    },
+    {
+      "standard": "subactor.lifecycle",
+      "version": "0.1.0-dev",
+      "relation": "compatible-with",
+      "uri": "https://github.com/subactor/lifecycle/tree/f3b8e13eb17128fd0f3ff05ac45fc99c99c470c4"
+    },
+    {
+      "standard": "subactor.twin",
+      "version": "0.1.0-dev",
+      "relation": "compatible-with",
+      "uri": "https://github.com/subactor/twin/tree/edfb690d4523643d6d2ea410a943b0a4a3ddd078"
+    }
+  ]
+}

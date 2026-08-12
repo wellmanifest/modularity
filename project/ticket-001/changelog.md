@@ -4,3 +4,5 @@
 
 - Initial governance scaffold created.
 - No human participant identity or content was generated.
+- Defined Modularity DSL v1 semantics, schema, stable diagnostics, immutable
+  source-standard references and the owning Wellmanifest DSL manifest.

@@ -28,6 +28,13 @@ inflation while remaining usable from any implementation language.
   from the request to execute this work.
 - Recorded `653e677e508132be30b97bcbba48599c902437ed` as the accepted bootstrap
   base and kept the unpublished POA draft outside normative dependency pins.
+- Defined the canonical module, contract, composition, state, authority,
+  lifecycle, Twin, POA and interface invariants.
+- Added a Draft 2020-12 closed schema and stable `MOD-*` diagnostic catalog.
+- Bound DSL, Lifecycle and Twin to exact remote-main revisions and recorded the
+  local POA draft as informative with no fabricated revision.
+- Added a Wellmanifest DSL manifest that owns all five implementation artifacts
+  and digest-binds every non-self-referential artifact.
 
 ## Blockers
 

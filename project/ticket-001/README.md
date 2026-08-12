@@ -17,14 +17,14 @@ declared composition.
 
 ## Acceptance criteria
 
-- [ ] AC-01: The standard defines module, contract and composition boundaries
+- [x] AC-01: The standard defines module, contract and composition boundaries
   without coupling them to a programming language or transport.
-- [ ] AC-02: The closed JSON Schema rejects mutable revisions, authority on
+- [x] AC-02: The closed JSON Schema rejects mutable revisions, authority on
   non-invocation links, shell-string conformance commands and unsupported
   composition modes.
-- [ ] AC-03: DSL, Lifecycle and Twin are bound to exact published repository
+- [x] AC-03: DSL, Lifecycle and Twin are bound to exact published repository
   revisions; unpublished POA is clearly informative and unpinned.
-- [ ] AC-04: Stable `MOD-*` diagnostics cover every semantic rule that the
+- [x] AC-04: Stable `MOD-*` diagnostics cover every semantic rule that the
   deterministic validator must enforce in the next slice.
 - [ ] AC-05: The Wellmanifest DSL manifest owns all five implementation
   artifacts, digest-binds the four non-self-referential artifacts, and passes
