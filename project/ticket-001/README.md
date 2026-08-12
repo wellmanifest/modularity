@@ -3,7 +3,7 @@
 - **ID**: ticket-001
 - **Owner**: unresolved:human
 - **Status**: IN_PROGRESS
-- **Workflow state**: EDIT
+- **Workflow state**: PUBLICATION
 - **Created**: 2026-08-12
 
 ## Goal and scope
@@ -26,7 +26,7 @@ declared composition.
   revisions; unpublished POA is clearly informative and unpinned.
 - [x] AC-04: Stable `MOD-*` diagnostics cover every semantic rule that the
   deterministic validator must enforce in the next slice.
-- [ ] AC-05: The Wellmanifest DSL manifest owns all five implementation
+- [x] AC-05: The Wellmanifest DSL manifest owns all five implementation
   artifacts, digest-binds the four non-self-referential artifacts, and passes
   the pinned DSL checker.
 

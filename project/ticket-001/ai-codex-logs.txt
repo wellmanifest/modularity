@@ -11,3 +11,6 @@
 - Reference inspection proved three exact normative revisions and the explicit
   informative/unpublished POA status.
 - Pinned Wellmanifest DSL checker result: `DSL-PASS: passed (0 errors)`.
+- Adopted governance gate result after the plan/implementation split and
+  portable-path correction: `GOV-PASS: passed (0 errors, 0 warnings)`.
+- `git diff --check` passed for the complete ticket branch.
