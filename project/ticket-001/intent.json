@@ -81,7 +81,7 @@
       },
       {
         "criterion": "AC-05",
-        "commands": ["python3 ../dsl/src/dsl_check.py validate --root . docs/dsl-manifest.json", "./project/governance-check.sh --actor agent --base 653e677e508132be30b97bcbba48599c902437ed --head HEAD", "git diff --check"],
+        "commands": ["python3 ../../wellmanifest/dsl/src/dsl_check.py validate --root . docs/dsl-manifest.json", "./project/governance-check.sh --actor agent --base 653e677e508132be30b97bcbba48599c902437ed --head HEAD", "git diff --check"],
         "evidence": "project/ticket-001/ai-codex-logs.txt"
       }
     ]
