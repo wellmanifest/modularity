@@ -10,6 +10,7 @@ import json
 import re
 import sys
 from collections import Counter, defaultdict
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Iterable, Sequence
 from urllib.parse import urlparse
@@ -81,6 +82,7 @@ class Finding:
         }
 
 
+@lru_cache(maxsize=1)
 def _catalog() -> dict[str, tuple[str, str]]:
     catalog_path = (
         Path(__file__).resolve().parents[1] / "docs" / "errors" / "catalog.json"
@@ -91,12 +93,20 @@ def _catalog() -> dict[str, tuple[str, str]]:
     }
 
 
-CATALOG = _catalog()
-
-
 def _finding(code: str, path: str) -> Finding:
-    severity, message = CATALOG[code]
+    severity, message = _catalog()[code]
     return Finding(path=path, code=code, message=message, severity=severity)
+
+
+def _internal_finding() -> Finding:
+    """Return the fail-safe diagnostic without depending on the catalog."""
+
+    return Finding(
+        path="$",
+        code="MOD-INTERNAL-001",
+        message="Validation stopped because of an unexpected internal failure.",
+        severity="critical",
+    )
 
 
 def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -435,7 +445,11 @@ class Validator:
                 self.add("MOD-ANALYSIS-001", f"{path}.{field}")
         managed = set(path_lists.get("managedPaths", []))
         generated = set(path_lists.get("generatedPaths", []))
-        if managed & generated:
+        if any(
+            _glob_covers(left, right) or _glob_covers(right, left)
+            for left in managed
+            for right in generated
+        ):
             self.add("MOD-ANALYSIS-001", path)
         includes = path_lists.get("includePaths", [])
         excludes = path_lists.get("excludePaths", [])
@@ -691,6 +705,16 @@ class Validator:
                 and link.get("mode") != "invoke"
             ):
                 self.add("MOD-POA-001", link_path)
+            generation = link.get("generation")
+            if link.get("mode") == "generate" and isinstance(generation, dict):
+                output_exports = contracts_by_uri.get(
+                    generation.get("outputContract"), []
+                )
+                if len(output_exports) != 1:
+                    self.add(
+                        "MOD-COMPOSE-001",
+                        f"{link_path}.generation.outputContract",
+                    )
         visiting: set[str] = set()
         visited: set[str] = set()
         cyclic: set[str] = set()
@@ -833,7 +857,7 @@ def main(argv: Iterable[str] | None = None) -> int:
         print(report)
         return 1 if findings else 0
     except Exception:
-        finding = _finding("MOD-INTERNAL-001", "$")
+        finding = _internal_finding()
         report = (
             render_json(args.document, [finding])
             if args.format == "json"

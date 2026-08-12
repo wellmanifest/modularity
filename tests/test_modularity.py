@@ -275,6 +275,9 @@ class GraphValidationTests(unittest.TestCase):
         document = valid_document()
         del document["links"][3]["generation"]
         self.assertIn("MOD-COMPOSE-001", codes(document))
+        document = valid_document()
+        document["links"][3]["generation"]["outputContract"] = "urn:missing"
+        self.assertIn("MOD-COMPOSE-001", codes(document))
 
 
 class IntegrityAndReportingTests(unittest.TestCase):
@@ -317,6 +320,11 @@ class IntegrityAndReportingTests(unittest.TestCase):
         document["analysisScope"]["excludePaths"] = ["**"]
         self.assertIn("MOD-ANALYSIS-001", codes(document))
 
+        document = valid_document()
+        document["analysisScope"]["managedPaths"] = ["dist/**"]
+        document["analysisScope"]["generatedPaths"] = ["dist/generated/**"]
+        self.assertIn("MOD-ANALYSIS-001", codes(document))
+
     def test_findings_and_json_report_are_deterministic(self) -> None:
         document = valid_document()
         document["links"][0]["from"] = "missing"
@@ -349,6 +357,18 @@ class IntegrityAndReportingTests(unittest.TestCase):
         with mock.patch("modularity.validate_path", side_effect=RuntimeError("boom")):
             with redirect_stderr(error):
                 self.assertEqual(modularity.main(["workspace.json"]), 2)
+        self.assertIn("MOD-INTERNAL-001", error.getvalue())
+
+    def test_internal_report_does_not_depend_on_error_catalog(self) -> None:
+        error = io.StringIO()
+        with mock.patch(
+            "modularity.validate_path", side_effect=RuntimeError("catalog unavailable")
+        ):
+            with mock.patch(
+                "modularity._catalog", side_effect=RuntimeError("catalog unavailable")
+            ):
+                with redirect_stderr(error):
+                    self.assertEqual(modularity.main(["workspace.json"]), 2)
         self.assertIn("MOD-INTERNAL-001", error.getvalue())
 
 
