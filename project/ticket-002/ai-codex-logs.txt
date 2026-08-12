@@ -74,3 +74,19 @@
 - Final unit result: `Ran 19 tests`; `OK`.
 - Final `ruff format --check`, `ruff check`, `py_compile`, `git diff --check`
   and adopted governance checks passed.
+
+## 2026-08-12 publication and closure
+
+- Pull request: `subactor/modularity#3`.
+- Required hosted check `governance / remote lifecycle` passed at exact head
+  `fbcd7bfc7f91565a833d736848c405acc06926f5`.
+- Validator Agent run `31610669726` created an `APPROVED` review from
+  `ifuri-validator-agent[bot]` at that exact commit. Deterministic policy was
+  the trust root; advisory `openrouter/z-ai/glm-5.2` reviewed six chunks,
+  returned `APPROVE`, and reported no findings.
+- Pull request #3 merged with history preservation as
+  `56aefc5dc48c717c5b8417c6fbaee1614e695f1d`.
+- Repository branch lookup returned HTTP 404 for `ticket/002-validator` after
+  merge, proving automatic remote deletion.
+- This follow-up contains governance closure only and is based on integrated
+  `main`; the ecosystem profile remains a separately bounded ticket.
