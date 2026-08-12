@@ -3,7 +3,7 @@
 - **ID**: ticket-002
 - **Owner**: unresolved:human
 - **Status**: IN_PROGRESS
-- **Workflow state**: EDIT
+- **Workflow state**: VALIDATION
 - **Created**: 2026-08-12
 
 ## Goal and scope
@@ -17,17 +17,17 @@ conformance commands.
 
 ## Acceptance criteria
 
-- [ ] AC-01: Strict parsing rejects invalid UTF-8, malformed JSON and duplicate
+- [x] AC-01: Strict parsing rejects invalid UTF-8, malformed JSON and duplicate
   object keys with stable diagnostics.
-- [ ] AC-02: Closed-document validation rejects unknown/missing fields,
+- [x] AC-02: Closed-document validation rejects unknown/missing fields,
   malformed identifiers, revisions, digests, paths, policies and mode-specific
   fields without a third-party schema runtime.
-- [ ] AC-03: Semantic validation covers unique identifiers and exports,
+- [x] AC-03: Semantic validation covers unique identifiers and exports,
   endpoint/contract resolution, local digests, layer direction, DAG topology,
   state ownership, lifecycle, Twin, POA and bounded analysis scope.
-- [ ] AC-04: Text and JSON reports sort findings by path, code and message;
+- [x] AC-04: Text and JSON reports sort findings by path, code and message;
   valid input exits 0, invalid input exits 1 and internal failure exits 2.
-- [ ] AC-05: Positive and focused negative tests pass without network access,
+- [x] AC-05: Positive and focused negative tests pass without network access,
   and the adopted governance gate reports zero errors and warnings.
 
 ## Risks

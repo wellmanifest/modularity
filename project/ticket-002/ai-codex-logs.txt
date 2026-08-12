@@ -1,0 +1,26 @@
+# ticket-002 validation log
+
+## 2026-08-12 implementation
+
+- Plan-first commits: `584ec82`, `35d26cd`.
+- Implementation commit: `b232e41`.
+- Implementation files: `src/modularity.py`, `tests/test_modularity.py`.
+- Runtime dependencies: none; network operations: none.
+
+## 2026-08-12 deterministic validation
+
+- `PYTHONPATH=src python -m unittest discover -s tests -v`
+  - result: `Ran 18 tests`; `OK`.
+- `ruff format --check src/modularity.py tests/test_modularity.py`: passed after
+  applying the deterministic formatter.
+- `ruff check src/modularity.py tests/test_modularity.py`: passed.
+- `python -m py_compile src/modularity.py tests/test_modularity.py`: passed.
+- `git diff --check`: passed.
+- Draft 2020-12 comparison accepted the shared positive fixture in both
+  validators and rejected all 12 focused invalid mutations in both.
+- Recursive removal/unknown-field comparison covered 190 mutations; scalar
+  type replacement covered 130 more. In all 320 cases, there were zero inputs
+  rejected by the canonical schema but accepted by this validator.
+- Missing paths from remote module declarations were deliberately not reported
+  as local digest failures. When a declared artifact existed under `--root`,
+  matching and mismatching SHA-256 cases were both exercised.

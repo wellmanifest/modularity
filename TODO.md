@@ -12,6 +12,9 @@
   - [x] Obtain trusted exact-head review, merge, and verify branch deletion.
 - [ ] [`ticket-002`](project/ticket-002/README.md): implement dependency-free,
   deterministic document and semantic validation with stable `MOD-*` errors.
+  - [x] Preserve plan-first history and the two-file implementation budget.
+  - [x] Pass unit, static, schema-equivalence and governance validation.
+  - [ ] Complete LLM-assisted intent review and trusted publication.
 
 ## Later
 

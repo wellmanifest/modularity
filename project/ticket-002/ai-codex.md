@@ -27,6 +27,15 @@ owned by ticket-001 as immutable inputs.
   from the request to execute this work.
 - Accepted integrated base `a44645587720f26ed3ef8ab1b8259f65512eba68`
   and budgeted exactly two implementation files with no runtime dependency.
+- Implemented strict duplicate-key-aware UTF-8 JSON loading, closed field/type
+  checks and deterministic `Finding` reports backed by the published catalog.
+- Implemented module/contract/link resolution, local artifact digest checks,
+  layer and cycle rules, state ownership, lifecycle, Twin, POA, generation and
+  bounded-analysis validation without network or authority resolution.
+- Added 18 focused unit tests for valid input, negative rules, deterministic
+  output and CLI exit behavior.
+- Compared the implementation against the Draft 2020-12 schema over 320
+  structural/scalar mutations; no schema-invalid document was accepted.
 
 ## Blockers
 
