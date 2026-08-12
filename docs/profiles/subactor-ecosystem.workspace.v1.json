@@ -1,0 +1,414 @@
+{
+  "$schema": "https://subactor.dev/schemas/modularity-workspace/v1",
+  "schema": "subactor.modularity/workspace/v1",
+  "id": "subactor.ecosystem.reference",
+  "version": "0.1.0",
+  "description": "Reproducible reference composition of published Subactor standards, analysis, audit, model-routing and trusted-review contracts.",
+  "owners": [
+    {
+      "kind": "repository",
+      "id": "subactor/modularity"
+    }
+  ],
+  "standards": [
+    {
+      "id": "wellmanifest.dsl",
+      "relation": "normative",
+      "status": "published",
+      "repository": "https://github.com/wellmanifest/dsl",
+      "revision": "550e5f441c709e15f2679c1af151352d1eba2f1e",
+      "artifact": "schemas/dsl-manifest.schema.json"
+    },
+    {
+      "id": "subactor.lifecycle",
+      "relation": "normative",
+      "status": "published",
+      "repository": "https://github.com/subactor/lifecycle",
+      "revision": "f3b8e13eb17128fd0f3ff05ac45fc99c99c470c4",
+      "artifact": "spec/LIFECYCLE_DSL.md"
+    },
+    {
+      "id": "subactor.twin",
+      "relation": "normative",
+      "status": "published",
+      "repository": "https://github.com/subactor/twin",
+      "revision": "edfb690d4523643d6d2ea410a943b0a4a3ddd078",
+      "artifact": "proto/twin/v1/twin.proto"
+    },
+    {
+      "id": "subactor.modularity",
+      "relation": "normative",
+      "status": "published",
+      "repository": "https://github.com/subactor/modularity",
+      "revision": "3a414903181c5a06d03db7f3586da90941cf15f1",
+      "artifact": "docs/schemas/modularity-workspace.schema.v1.json"
+    },
+    {
+      "id": "wellmanifest.poa",
+      "relation": "informative",
+      "status": "draft",
+      "note": "The local POA design has no published commit or immutable contract and therefore cannot be a module or normative dependency."
+    }
+  ],
+  "modules": [
+    {
+      "id": "dsl",
+      "owners": [
+        {
+          "kind": "repository",
+          "id": "wellmanifest/dsl"
+        }
+      ],
+      "layer": "foundation",
+      "lifecycle": "stable",
+      "source": {
+        "repository": "https://github.com/wellmanifest/dsl",
+        "revision": "550e5f441c709e15f2679c1af151352d1eba2f1e"
+      },
+      "state": {
+        "role": "none"
+      },
+      "contracts": [
+        {
+          "id": "dsl-manifest",
+          "uri": "https://wellmanifest.dev/dsl/manifest/v1",
+          "kind": "json-schema",
+          "version": "1.0.0",
+          "digest": "sha256:b8d2f59017b89dbcd661a3c87fb895834470657271b8f03e51f32a2e65ef325c",
+          "path": "schemas/dsl-manifest.schema.json"
+        }
+      ]
+    },
+    {
+      "id": "lifecycle",
+      "owners": [
+        {
+          "kind": "repository",
+          "id": "subactor/lifecycle"
+        }
+      ],
+      "layer": "domain",
+      "lifecycle": "stable",
+      "source": {
+        "repository": "https://github.com/subactor/lifecycle",
+        "revision": "f3b8e13eb17128fd0f3ff05ac45fc99c99c470c4"
+      },
+      "state": {
+        "role": "none"
+      },
+      "contracts": [
+        {
+          "id": "lifecycle-dsl",
+          "uri": "https://subactor.dev/lifecycle/dsl/v1",
+          "kind": "lifecycle",
+          "version": "1.0.0",
+          "digest": "sha256:358c6718838a9f8e74cf95db83ffdda5b63b5df6d4369c36682b7583272dc465",
+          "path": "spec/LIFECYCLE_DSL.md"
+        }
+      ]
+    },
+    {
+      "id": "twin",
+      "owners": [
+        {
+          "kind": "repository",
+          "id": "subactor/twin"
+        }
+      ],
+      "layer": "domain",
+      "lifecycle": "experimental",
+      "source": {
+        "repository": "https://github.com/subactor/twin",
+        "revision": "edfb690d4523643d6d2ea410a943b0a4a3ddd078"
+      },
+      "state": {
+        "role": "none"
+      },
+      "contracts": [
+        {
+          "id": "generic-twin-profile",
+          "uri": "https://subactor.dev/twin/profile/v1",
+          "kind": "twin-trait",
+          "version": "1.0.0",
+          "digest": "sha256:851a0d3923621899bb2348815141c4a6fb3df9108b692877df916d1545b98c7f",
+          "path": "profiles/generic-twin.json"
+        },
+        {
+          "id": "twin-protobuf",
+          "uri": "https://subactor.dev/twin/protobuf/v1",
+          "kind": "protobuf",
+          "version": "1.0.0",
+          "digest": "sha256:6ea85a3914189ab79e41abea2fe3d0318da2944b8613cc6f835737ba8f6460dc",
+          "path": "proto/twin/v1/twin.proto"
+        }
+      ]
+    },
+    {
+      "id": "modularity",
+      "owners": [
+        {
+          "kind": "repository",
+          "id": "subactor/modularity"
+        }
+      ],
+      "layer": "domain",
+      "lifecycle": "experimental",
+      "source": {
+        "repository": "https://github.com/subactor/modularity",
+        "revision": "3a414903181c5a06d03db7f3586da90941cf15f1"
+      },
+      "state": {
+        "role": "none"
+      },
+      "contracts": [
+        {
+          "id": "modularity-workspace",
+          "uri": "https://subactor.dev/modularity/workspace/v1",
+          "kind": "json-schema",
+          "version": "1.0.0",
+          "digest": "sha256:98db51af5b17e9a480f587f462da52aafd70d8b40ae87d873d7a42fdd4fd5a68",
+          "path": "docs/schemas/modularity-workspace.schema.v1.json"
+        }
+      ]
+    },
+    {
+      "id": "subllm",
+      "owners": [
+        {
+          "kind": "repository",
+          "id": "subactor/subllm"
+        }
+      ],
+      "layer": "domain",
+      "lifecycle": "stable",
+      "source": {
+        "repository": "https://github.com/subactor/subllm",
+        "revision": "b472efca0be3e9d55c8e83fe01a5e2e32654d953"
+      },
+      "state": {
+        "role": "none"
+      },
+      "contracts": [
+        {
+          "id": "routing-policy",
+          "uri": "https://subactor.dev/subllm/routing-policy/v1",
+          "kind": "other",
+          "version": "1.0.0",
+          "digest": "sha256:6561d80065abb0c9590ae4d11fa2a19235c7ecc3f01ebd17e76e3e603e9ad39e",
+          "path": "docs/architecture.md"
+        }
+      ]
+    },
+    {
+      "id": "todo2code",
+      "owners": [
+        {
+          "kind": "repository",
+          "id": "semcod/todo2code"
+        }
+      ],
+      "layer": "application",
+      "lifecycle": "stable",
+      "source": {
+        "repository": "https://github.com/semcod/todo2code",
+        "revision": "0dfb82c3c6b2d6af795c5a3263ca9e24a5652560"
+      },
+      "state": {
+        "role": "owner",
+        "domain": "intent-evidence"
+      },
+      "contracts": [
+        {
+          "id": "intent-graph",
+          "uri": "https://semcod.dev/todo2code/intent-graph/v1",
+          "kind": "json-schema",
+          "version": "1.0.0",
+          "digest": "sha256:bd5ce8511d5bb9a96ff346c49c7845601fffa8f7fb382ec1568bf440851778fd",
+          "path": "schemas/intent-graph.schema.json"
+        }
+      ]
+    },
+    {
+      "id": "diagit",
+      "owners": [
+        {
+          "kind": "repository",
+          "id": "subactor/diagit"
+        }
+      ],
+      "layer": "application",
+      "lifecycle": "stable",
+      "source": {
+        "repository": "https://github.com/subactor/diagit",
+        "revision": "f4fdfd958b21904c0e26ec6ffa98841644ee9117"
+      },
+      "state": {
+        "role": "owner",
+        "domain": "repository-audit"
+      },
+      "contracts": [
+        {
+          "id": "request-dsl",
+          "uri": "https://subactor.dev/diagit/request/v1",
+          "kind": "dsl",
+          "version": "1.0.0",
+          "digest": "sha256:633755cb2649c31cf97b306e9c9012fbd28889fff9e78e119dbea02f5c8ca0de",
+          "path": "src/diagit/grammars/diagit-request.v1.gbnf"
+        },
+        {
+          "id": "audit-event",
+          "uri": "https://subactor.dev/diagit/audit-event/v1",
+          "kind": "protobuf",
+          "version": "1.0.0",
+          "digest": "sha256:225623ab492af57de027dce73faea0ca72c0ba33e6104efa80987d77a9979d15",
+          "path": "proto/diagit/v1/audit.proto"
+        }
+      ]
+    },
+    {
+      "id": "validator-agent",
+      "owners": [
+        {
+          "kind": "repository",
+          "id": "subactor/validator-agent"
+        }
+      ],
+      "layer": "interface",
+      "lifecycle": "stable",
+      "source": {
+        "repository": "https://github.com/subactor/validator-agent",
+        "revision": "9cfe43cf3edf38421088eeb8e13df4883db98369"
+      },
+      "state": {
+        "role": "none"
+      },
+      "contracts": [
+        {
+          "id": "domain-event",
+          "uri": "https://subactor.dev/validator-agent/domain-event/v1",
+          "kind": "other",
+          "version": "1.0.0",
+          "digest": "sha256:e42df9a613e7d40956c39c42bd49a3d6cfeca6d2ff97226d44b2ff944339dc5c",
+          "path": "contracts/README.md"
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "id": "modularity-dsl",
+      "from": "modularity",
+      "to": "dsl",
+      "contract": "https://wellmanifest.dev/dsl/manifest/v1",
+      "mode": "link"
+    },
+    {
+      "id": "modularity-lifecycle",
+      "from": "modularity",
+      "to": "lifecycle",
+      "contract": "https://subactor.dev/lifecycle/dsl/v1",
+      "mode": "link"
+    },
+    {
+      "id": "modularity-twin",
+      "from": "modularity",
+      "to": "twin",
+      "contract": "https://subactor.dev/twin/profile/v1",
+      "mode": "observe"
+    },
+    {
+      "id": "diagit-dsl",
+      "from": "diagit",
+      "to": "dsl",
+      "contract": "https://wellmanifest.dev/dsl/manifest/v1",
+      "mode": "link"
+    },
+    {
+      "id": "todo2code-subllm",
+      "from": "todo2code",
+      "to": "subllm",
+      "contract": "https://subactor.dev/subllm/routing-policy/v1",
+      "mode": "link"
+    },
+    {
+      "id": "validator-subllm",
+      "from": "validator-agent",
+      "to": "subllm",
+      "contract": "https://subactor.dev/subllm/routing-policy/v1",
+      "mode": "link"
+    },
+    {
+      "id": "validator-todo2code",
+      "from": "validator-agent",
+      "to": "todo2code",
+      "contract": "https://semcod.dev/todo2code/intent-graph/v1",
+      "mode": "link"
+    },
+    {
+      "id": "validator-diagit",
+      "from": "validator-agent",
+      "to": "diagit",
+      "contract": "https://subactor.dev/diagit/audit-event/v1",
+      "mode": "observe"
+    }
+  ],
+  "policies": {
+    "unknownFields": "reject",
+    "cycles": "reject",
+    "layerDirection": "higher-to-same-or-lower",
+    "contractOwnership": "single-exporter",
+    "stateOwnership": "single-writer",
+    "authority": "external-reference-only",
+    "twinAuthority": "observational-only",
+    "llmAuthority": "propose-only",
+    "allowDeprecated": false
+  },
+  "analysisScope": {
+    "includePaths": [
+      "docs/MODULARITY.md",
+      "docs/profiles/**",
+      "docs/schemas/**"
+    ],
+    "excludePaths": [
+      ".intent/**"
+    ],
+    "managedPaths": [
+      ".governance/**"
+    ],
+    "generatedPaths": [
+      "docs/generated/**"
+    ],
+    "llm": {
+      "inputPolicy": "intent-diff-and-findings",
+      "maxPromptTokens": 32000,
+      "maxFindingsPerBatch": 40,
+      "wholeGraphPolicy": "reject",
+      "requireProvenance": true
+    }
+  },
+  "conformance": {
+    "levels": [
+      "document",
+      "graph",
+      "standards"
+    ],
+    "commands": [
+      [
+        "python",
+        "-m",
+        "modularity",
+        "docs/profiles/subactor-ecosystem.workspace.v1.json",
+        "--format",
+        "json"
+      ],
+      [
+        "python3",
+        "../../wellmanifest/dsl/src/dsl_check.py",
+        "validate",
+        "--root",
+        ".",
+        "docs/dsl-manifest.json"
+      ]
+    ]
+  }
+}
