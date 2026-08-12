@@ -27,7 +27,8 @@
     "docs/MODULARITY.md",
     "docs/schemas/**",
     "docs/errors/**",
-    "docs/references/**"
+    "docs/references/**",
+    "docs/profiles/**"
   ],
   "artifacts": [
     {
@@ -49,6 +50,16 @@
       "path": "docs/references/standards.json",
       "role": "profile",
       "digest": "sha256:1977051de70e3cd7e5329ec4301db29eafab72b575f66a4e9124683b968b74d5"
+    },
+    {
+      "path": "docs/profiles/subactor-ecosystem.workspace.v1.json",
+      "role": "profile",
+      "digest": "sha256:d6011d42594de68c100a97b17234bb3516dfb715cc36309f80386fae0147a2bb"
+    },
+    {
+      "path": "docs/profiles/SUBACTOR_ECOSYSTEM.md",
+      "role": "documentation",
+      "digest": "sha256:303eb91ee9fd86b86719365069ad705a42fc4a0e7cc83d7892a55fa5d546b921"
     }
   ],
   "namespaces": [
@@ -98,9 +109,13 @@
     "commands": [
       "python3 -m json.tool docs/schemas/modularity-workspace.schema.v1.json",
       "python3 -m json.tool docs/errors/catalog.json",
-      "python3 -m json.tool docs/references/standards.json"
+      "python3 -m json.tool docs/references/standards.json",
+      "python3 -m json.tool docs/profiles/subactor-ecosystem.workspace.v1.json",
+      "PYTHONPATH=src python -m modularity docs/profiles/subactor-ecosystem.workspace.v1.json --format json"
     ],
-    "validExamples": [],
+    "validExamples": [
+      "docs/profiles/subactor-ecosystem.workspace.v1.json"
+    ],
     "invalidExamples": []
   },
   "mappings": [

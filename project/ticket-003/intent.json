@@ -1,0 +1,92 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-003",
+  "summary": "Publish Subactor ecosystem modularity profile",
+  "workstream": "integration",
+  "classification": {
+    "kind": "FEATURE",
+    "priority": "P2",
+    "origin": "requested"
+  },
+  "delivery": {
+    "acceptedBaseSha": "3a414903181c5a06d03db7f3586da90941cf15f1",
+    "targetBranch": "main",
+    "outcome": "A validated and digest-bound Subactor ecosystem profile demonstrates reproducible modular composition across the published standards and tools.",
+    "nonGoals": [
+      "Claim that every reference link is an installed package dependency",
+      "Fetch or execute repositories from the profile",
+      "Publish or commit the local POA draft",
+      "Fabricate a missing patterns repository or its revision",
+      "Modify any profiled source repository",
+      "Merge without independent trusted current-head approval"
+    ],
+    "complexity": "S",
+    "estimatedMinutes": 25,
+    "budgets": {
+      "maxImplementationFiles": 3,
+      "maxAffectedComponents": 2,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Publish a closed Modularity workspace plus evidence guide, pinning external source and contract blobs while leaving POA informative until it has a commit.",
+      "components": [
+        {
+          "name": "ecosystem-profile",
+          "paths": [
+            "docs/profiles/subactor-ecosystem.workspace.v1.json",
+            "docs/profiles/SUBACTOR_ECOSYSTEM.md"
+          ]
+        },
+        {"name": "dsl-binding", "paths": ["docs/dsl-manifest.json"]}
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {"impact": "none", "states": [], "evidence": []},
+      "rollback": "Revert the two profile artifacts and their manifest ownership entry."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-01",
+        "commands": ["compare every source revision with GitHub remote main and every declared digest with git show REVISION:PATH"],
+        "evidence": "project/ticket-003/ai-codex-logs.txt"
+      },
+      {
+        "criterion": "AC-02",
+        "commands": ["PYTHONPATH=src python -m modularity docs/profiles/subactor-ecosystem.workspace.v1.json --format json"],
+        "evidence": "project/ticket-003/ai-codex-logs.txt"
+      },
+      {
+        "criterion": "AC-03",
+        "commands": ["review docs/profiles/SUBACTOR_ECOSYSTEM.md against exact source artifacts"],
+        "evidence": "project/ticket-003/ai-codex-logs.txt"
+      },
+      {
+        "criterion": "AC-04",
+        "commands": ["verify POA has no HEAD and the configured workspace inventory contains no patterns repository"],
+        "evidence": "project/ticket-003/ai-codex-logs.txt"
+      },
+      {
+        "criterion": "AC-05",
+        "commands": ["python3 ../../wellmanifest/dsl/src/dsl_check.py validate --root . docs/dsl-manifest.json", "./project/governance-check.sh --actor agent --base 3a414903181c5a06d03db7f3586da90941cf15f1 --head HEAD", "git diff --check"],
+        "evidence": "project/ticket-003/ai-codex-logs.txt"
+      }
+    ]
+  },
+  "allowedPaths": [
+    "project/ticket-003/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "docs/profiles/subactor-ecosystem.workspace.v1.json",
+    "docs/profiles/SUBACTOR_ECOSYSTEM.md",
+    "docs/dsl-manifest.json"
+  ],
+  "forbiddenPaths": ["project/ticket-*/user-*.md"],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null
+}

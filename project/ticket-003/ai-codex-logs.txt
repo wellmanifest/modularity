@@ -1,0 +1,89 @@
+# ticket-003 validation log
+
+## 2026-08-12 implementation
+
+- Plan-first commits: `83d1fde`, `0933e96`.
+- Implementation commit:
+  `360d159f7a8f336c3aa70ec2c74fefc5f0679b0b`.
+- Implementation files: `docs/profiles/subactor-ecosystem.workspace.v1.json`,
+  `docs/profiles/SUBACTOR_ECOSYSTEM.md`, `docs/dsl-manifest.json`.
+- Runtime dependencies: none; the profile itself performs no fetch, invocation
+  or authority grant.
+
+## 2026-08-12 immutable source evidence
+
+- Remote `main` matched every declared revision:
+  - `wellmanifest/dsl`:
+    `550e5f441c709e15f2679c1af151352d1eba2f1e`.
+  - `subactor/lifecycle`:
+    `f3b8e13eb17128fd0f3ff05ac45fc99c99c470c4`.
+  - `subactor/twin`:
+    `edfb690d4523643d6d2ea410a943b0a4a3ddd078`.
+  - `subactor/modularity`:
+    `3a414903181c5a06d03db7f3586da90941cf15f1`.
+  - `subactor/subllm`:
+    `b472efca0be3e9d55c8e83fe01a5e2e32654d953`.
+  - `semcod/todo2code`:
+    `0dfb82c3c6b2d6af795c5a3263ca9e24a5652560`.
+  - `subactor/diagit`:
+    `f4fdfd958b21904c0e26ec6ffa98841644ee9117`.
+  - `subactor/validator-agent`:
+    `9cfe43cf3edf38421088eeb8e13df4883db98369`.
+- `git show REVISION:PATH | sha256sum` matched all ten declared digests:
+  `b8d2f59017b89dbcd661a3c87fb895834470657271b8f03e51f32a2e65ef325c`,
+  `358c6718838a9f8e74cf95db83ffdda5b63b5df6d4369c36682b7583272dc465`,
+  `851a0d3923621899bb2348815141c4a6fb3df9108b692877df916d1545b98c7f`,
+  `6ea85a3914189ab79e41abea2fe3d0318da2944b8613cc6f835737ba8f6460dc`,
+  `98db51af5b17e9a480f587f462da52aafd70d8b40ae87d873d7a42fdd4fd5a68`,
+  `6561d80065abb0c9590ae4d11fa2a19235c7ecc3f01ebd17e76e3e603e9ad39e`,
+  `bd5ce8511d5bb9a96ff346c49c7845601fffa8f7fb382ec1568bf440851778fd`,
+  `633755cb2649c31cf97b306e9c9012fbd28889fff9e78e119dbea02f5c8ca0de`,
+  `225623ab492af57de027dce73faea0ca72c0ba33e6104efa80987d77a9979d15`
+  and
+  `e42df9a613e7d40956c39c42bd49a3d6cfeca6d2ff97226d44b2ff944339dc5c`.
+- The configured workspace inventory contained no `patterns` repository. The
+  local POA draft had no HEAD, remote or immutable contract and was not edited.
+
+## 2026-08-12 deterministic validation
+
+- Strict JSON parsing passed for the workspace and DSL manifest.
+- Draft 2020-12 validation of the workspace passed with zero errors.
+- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python -m modularity
+  docs/profiles/subactor-ecosystem.workspace.v1.json --format json` returned
+  `valid=true` with zero findings.
+- The pinned Wellmanifest DSL checker returned `DSL-PASS: passed (0 errors)`.
+- The adopted governance gate returned
+  `GOV-PASS: passed (0 errors, 0 warnings)`.
+- `git diff --check` passed.
+
+## 2026-08-12 todo2code/SubLLM semantic review
+
+- Isolated reviewed checkout:
+  `/tmp/modularity-ticket003-t2c.sopx0T/repo` at exact implementation head
+  `360d159f7a8f336c3aa70ec2c74fefc5f0679b0b`.
+- Runtime: todo2code `0.5.0` from `semcod/todo2code` main
+  `0dfb82c3c6b2d6af795c5a3263ca9e24a5652560`.
+- Run ID: `20260812T152423Z-ad24f963`; graph fingerprint:
+  `a0051d78b897a5a1ff2efe446e7866ccd5244e60dcbedaee8af2243a166149ba`.
+- Natural-language, Markdown, documentation, communication and summary stages
+  all reported `succeeded / llm / degraded=false`. Effective routing was
+  SubLLM application `todo2code`, function `semantic`, provider `openrouter`,
+  policy model `glm-5.2`, wire model `z-ai/glm-5.2`.
+- Task synthesis alone was disabled because the two earlier `require-llm`
+  attempts had already failed its required `proposals` contract. No
+  deterministic fallback substituted for an enabled semantic stage.
+- Ten LLM calls consumed 114,742 prompt and 14,460 completion tokens and
+  reported USD 0.205850368 total cost. Summary alone received 97,662 prompt
+  tokens, proving todo2code does not yet enforce the profile's 32,000-token
+  `analysisScope`.
+- Diagnostics: 98 total (16 blocking, 11 review-required, 65 warning, 6 info).
+  All six blocking conflicts assigned opposite polarities to identical AC-02
+  or AC-04 statements. Ten blocking completion findings failed to link
+  historical Git evidence already present in the repository. The ambiguity and
+  outside-request findings arose from extractor/linker limitations, including
+  the isolated clone's lack of the original conversation, not a content gap.
+- All 12 deterministic code plans were rejected. Nine targeted completed or
+  deliberately open `TODO.md` evidence; the other three proposed redoing the
+  already implemented guide/manifest changes. No source patch was applied.
+- Manual comparison against the closed intent, exact source blobs and
+  deterministic validator found no profile defect requiring a patch.
