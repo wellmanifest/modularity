@@ -1,0 +1,76 @@
+# ticket-002 validation log
+
+## 2026-08-12 implementation
+
+- Plan-first commits: `584ec82`, `35d26cd`.
+- Implementation commit: `b232e41`.
+- Implementation files: `src/modularity.py`, `tests/test_modularity.py`.
+- Runtime dependencies: none; network operations: none.
+
+## 2026-08-12 deterministic validation
+
+- `PYTHONPATH=src python -m unittest discover -s tests -v`
+  - initial result: `Ran 18 tests`; `OK`.
+  - final result after hardening: `Ran 19 tests`; `OK`.
+- `ruff format --check src/modularity.py tests/test_modularity.py`: passed after
+  applying the deterministic formatter.
+- `ruff check src/modularity.py tests/test_modularity.py`: passed.
+- `python -m py_compile src/modularity.py tests/test_modularity.py`: passed.
+- `git diff --check`: passed.
+- Draft 2020-12 comparison accepted the shared positive fixture in both
+  validators and rejected all 12 focused invalid mutations in both.
+- Recursive removal/unknown-field comparison covered 190 mutations; scalar
+  type replacement covered 130 more. In all 320 cases, there were zero inputs
+  rejected by the canonical schema but accepted by this validator.
+- Missing paths from remote module declarations were deliberately not reported
+  as local digest failures. When a declared artifact existed under `--root`,
+  matching and mismatching SHA-256 cases were both exercised.
+
+## 2026-08-12 todo2code/SubLLM review
+
+- Isolated reviewed checkout:
+  `/tmp/modularity-ticket002-t2c.3wFJRh/repo` at exact head
+  `b6ec5d925bfc2c5f8fa9132f8ad54d92a5d9d637`.
+- Runtime: todo2code `0.5.0` from `semcod/todo2code` main
+  `0dfb82c3c6b2d6af795c5a3263ca9e24a5652560`.
+- Route: SubLLM application `todo2code`, function `semantic`, provider
+  `openrouter`, policy model `glm-5.2`, wire model `z-ai/glm-5.2`, priority 20.
+- The first run required LLM task synthesis and failed closed with
+  `LLM_RESPONSE_INVALID`: two approximately 74k-token prompts did not return
+  required property `proposals`. It made 6 LLM calls, used 154,788 prompt and
+  32,443 completion tokens, and reported USD 0.190046644 cost. No fallback or
+  graph publication occurred.
+- That run also exposed an integration defect: documentation gating checked
+  direct OpenRouter configuration before using the already resolved SubLLM
+  route. The second run supplied the same protected environment source to both
+  boundaries and disabled only the independently proven-broken task synthesis.
+- Successful run ID: `20260812T145714Z-141a38aa`; graph fingerprint:
+  `036efd8d77b7c393f64209ab37abea8fb80ca683bd972e9034391d19a62ea8a6`.
+- NL, Markdown, documentation, communication and summary all reported
+  `succeeded / llm / degraded=false`; there were no run warnings. Eleven LLM
+  calls used 179,588 prompt and 30,680 completion tokens and reported USD
+  0.34908558 cost.
+- Summary alone received 157,658 prompt tokens. The declared Modularity
+  `analysisScope` is therefore not yet enforced by todo2code; this is a real
+  todo2code refactoring target, not a validator defect.
+- Diagnostics: 231 total (11 blocking, 3 review-required, 184 warning, 33
+  info). Four blocking polarity conflicts joined identical or semantically
+  identical positive requirements with negative polarity. Seven blocking
+  completion findings failed to link existing historical commit/review
+  evidence. Review-required claims likewise had matching Git/AST evidence that
+  the linker itself did not connect.
+- All 11 generated code plans were rejected. They targeted completed TODO
+  evidence or future profile work; one incorrectly proposed creating
+  `errors/catalog.json` despite the canonical owned path being
+  `docs/errors/catalog.json`. No proposal or source patch was applied.
+
+## 2026-08-12 post-review hardening
+
+- Manual review found three bounded improvements that todo2code did not name:
+  generated `outputContract` URIs now resolve uniquely, nested managed/generated
+  glob classifications conflict, and internal exit-2 rendering no longer
+  depends on successfully loading the error catalog.
+- Hardening commit: `0264825` (same two implementation files).
+- Final unit result: `Ran 19 tests`; `OK`.
+- Final `ruff format --check`, `ruff check`, `py_compile`, `git diff --check`
+  and adopted governance checks passed.
