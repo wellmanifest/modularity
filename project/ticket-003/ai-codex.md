@@ -43,6 +43,8 @@ semantics into Modularity.
 - Retained one genuine tool-level observation: todo2code sent 97,662 prompt
   tokens to summary despite the profile's 32,000-token `analysisScope`; the
   standard is present, but todo2code does not yet enforce it.
+- Moved the still-active ticket to `PUBLICATION`; `DONE / DONE` remains
+  reserved for a governance-only closure based on integrated `main`.
 
 ## Blockers
 
