@@ -2,6 +2,12 @@
 
 ## Active
 
+- [ ] [`ticket-004`](project/ticket-004/README.md): reconcile Modularity's DSL
+  revision and schema digest with the immutable pin used by SSOT, and replace
+  the stale POA no-repository placeholder with its published revision while
+  retaining an informative, no-authority relation. Current state:
+  `IN_PROGRESS / PUBLICATION`; DSL, profile, unit and governance checks pass,
+  pending protected exact-head delivery.
 - [x] Adopt immutable `new-project` governance at published revision
   `6800f0138bc9063eb2dacb0a8b797dedcafb7952`; repository bootstrap evidence:
   commit `653e677e508132be30b97bcbba48599c902437ed`.

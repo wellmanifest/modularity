@@ -11,12 +11,14 @@ prove that a package is installed in a particular deployment.
 ## Selection and evidence
 
 The selected repositories expose complementary boundaries needed by the user’s
-standardization goal. Every revision below was resolved from remote `main` on
-2026-08-12 and every digest covers the exact Git blob at that revision.
+standardization goal. The original profile revisions were resolved from remote
+`main` on 2026-08-12; DSL and POA were refreshed from remote `main` on
+2026-08-14. Every digest covers the exact Git blob at its declared revision.
 
 | Module | Revision | Contract artifact | SHA-256 |
 | --- | --- | --- | --- |
-| `wellmanifest/dsl` | `550e5f441c709e15f2679c1af151352d1eba2f1e` | `schemas/dsl-manifest.schema.json` | `b8d2f59017b89dbcd661a3c87fb895834470657271b8f03e51f32a2e65ef325c` |
+| `wellmanifest/dsl` | `b7d0595c95e5abbb48ebfdbdae0bc6d43c6f82f4` | `schemas/dsl-manifest.schema.json` | `34d356b76bbd483372df84bb986e15bb84e9c1f8b11b7dc9e3a6c7276c85ed13` |
+| `wellmanifest/poa` | `8424a7f5c977915ee08404b8b82d63e0f5e44ea2` | `docs/ARCHITECTURE.md` | `57570c935134b322cd69cd39be2136c24a6ceeaab36afa2f68a5b4d398856f28` |
 | `subactor/lifecycle` | `f3b8e13eb17128fd0f3ff05ac45fc99c99c470c4` | `spec/LIFECYCLE_DSL.md` | `358c6718838a9f8e74cf95db83ffdda5b63b5df6d4369c36682b7583272dc465` |
 | `subactor/twin` | `edfb690d4523643d6d2ea410a943b0a4a3ddd078` | `profiles/generic-twin.json` | `851a0d3923621899bb2348815141c4a6fb3df9108b692877df916d1545b98c7f` |
 | `subactor/twin` | `edfb690d4523643d6d2ea410a943b0a4a3ddd078` | `proto/twin/v1/twin.proto` | `6ea85a3914189ab79e41abea2fe3d0318da2944b8613cc6f835737ba8f6460dc` |
@@ -59,9 +61,10 @@ similar filename, or a future TODO.
   `observe`.
 - POA remains an informative sequence:
   `DSL -> AST -> capability -> read-only Twin -> dry plan/hash -> grant ->
-  bounded executor -> read-back -> receipt`. The local POA draft has no commit,
-  remote or immutable contract, so this profile deliberately contains no POA
-  module, capability link or invented revision.
+  bounded executor -> read-back -> receipt`. POA now has a published immutable
+  v1 contract, but this workspace imports no named POA capability. It therefore
+  deliberately contains no POA module, capability link or authority reference;
+  the exact POA revision is retained only as an informative standard binding.
 
 An executable POA capability would require a separately resolvable
 `authorityRef` on an `invoke` link. A URI, LLM verdict, Twin observation,

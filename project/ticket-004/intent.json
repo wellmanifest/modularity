@@ -1,0 +1,98 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-004",
+  "summary": "Reconcile Modularity's DSL pin with SSOT and replace the stale POA draft placeholder with immutable published evidence",
+  "workstream": "integration",
+  "classification": {
+    "kind": "BUG",
+    "priority": "P1",
+    "origin": "regression"
+  },
+  "allowedPaths": [
+    "project/ticket-004/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "docs/dsl-manifest.json",
+    "docs/MODULARITY.md",
+    "docs/references/standards.json",
+    "docs/profiles/subactor-ecosystem.workspace.v1.json",
+    "docs/profiles/SUBACTOR_ECOSYSTEM.md"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md",
+    ".governance/**",
+    "AGENTS.md",
+    "VERSION",
+    "src/**",
+    "tests/**",
+    "docs/schemas/**",
+    "docs/errors/**",
+    ".github/**"
+  ],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "1c8c94ee7e13ab95af3ab734b9548ebdfc4a7c20",
+    "targetBranch": "main",
+    "outcome": "Modularity uses one immutable DSL revision consistent with SSOT and describes POA from its real published revision without granting it authority",
+    "nonGoals": [
+      "No external standard source edit",
+      "No Modularity schema or validator semantic change",
+      "No POA module, invoke link or execution authority",
+      "No unrelated ecosystem refresh"
+    ],
+    "complexity": "S",
+    "estimatedMinutes": 25,
+    "budgets": {
+      "maxImplementationFiles": 5,
+      "maxAffectedComponents": 2,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Refresh immutable external-standard identity consistently across the normative manifest/reference layer and its ecosystem profile projection",
+      "components": [
+        {
+          "name": "standard-reference-contract",
+          "paths": [
+            "docs/dsl-manifest.json",
+            "docs/MODULARITY.md",
+            "docs/references/**"
+          ]
+        },
+        {
+          "name": "ecosystem-profile",
+          "paths": ["docs/profiles/**"]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [
+        "External DSL and POA revision evidence advances to verified remote-main identities"
+      ],
+      "ui": {"impact": "none", "states": [], "evidence": []},
+      "rollback": "Revert the ticket branch; the previous profile remains readable but contains the documented stale identities"
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-02",
+        "commands": ["git show pinned DSL artifacts", "python3 dsl_check.py validate"],
+        "evidence": "Selected revision equals DSL remote main and every declared digest matches exact artifact bytes"
+      },
+      {
+        "criterion": "AC-03",
+        "commands": ["git show pinned POA artifact", "PYTHONPATH=src python -m modularity docs/profiles/subactor-ecosystem.workspace.v1.json --format json"],
+        "evidence": "POA is immutable and published but remains an informative non-module standard"
+      },
+      {
+        "criterion": "AC-06",
+        "commands": ["PYTHONPATH=src python -m unittest discover -s tests", "./project/governance-check.sh"],
+        "evidence": "Contract, semantic and governance checks pass"
+      }
+    ]
+  }
+}
