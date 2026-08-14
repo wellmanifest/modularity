@@ -47,6 +47,17 @@ informative because Modularity's graph does not consume a POA capability.
 - Passed current DSL manifest/change checks, Modularity profile validation, all
   19 unit tests, governance and diff checks; transitioned to
   `IN_PROGRESS / PUBLICATION` without claiming protected merge approval.
+- Published PR #7 and obtained trusted Validator App approval bound to exact
+  implementation head `c676321fdf08ffef7296f87b3ee5abcd5f3cafb5`, ticket-004
+  and correlation `modularity-pr-7-ticket-004`.
+- The advisory GLM 5.2 opinion was unavailable because of provider budget; the
+  review states this explicitly and bases authority only on deterministic
+  hosted checks.
+- Merged through the protected external Validator boundary as
+  `main@2edd13e8e74ca0b7d00aa57087b5567eebf05633` and verified automatic deletion
+  of the remote implementation branch.
+- Closed `DONE / DONE` only in this governance-only follow-up from integrated
+  `main`.
 
 ## Blockers
 

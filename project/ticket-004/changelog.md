@@ -14,3 +14,8 @@
   recomputed digest bindings for all five changed governed artifacts.
 - Passed DSL, profile, 19-unit-test, governance and diff validation; moved the
   ticket to `IN_PROGRESS / PUBLICATION` for protected exact-head delivery.
+- Published PR #7, received trusted Validator App approval for exact head
+  `c676321fdf08ffef7296f87b3ee5abcd5f3cafb5` and merged as
+  `main@2edd13e8e74ca0b7d00aa57087b5567eebf05633`.
+- Verified automatic deletion of `ticket-004-reconcile-standard-pins`; this
+  separate governance-only follow-up closes the integrated ticket.
