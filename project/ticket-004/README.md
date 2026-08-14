@@ -2,8 +2,8 @@
 
 - **ID**: ticket-004
 - **Owner**: unresolved:human
-- **Status**: IN_PROGRESS
-- **Workflow state**: PUBLICATION
+- **Status**: DONE
+- **Workflow state**: DONE
 - **Created**: 2026-08-14
 
 ## Goal and scope
@@ -64,8 +64,14 @@ bounded session execution authorization, not trusted merge approval.
   governed diff.
 - `./project/governance-check.sh`, exact stale-pin searches and
   `git diff --check` pass on 2026-08-14.
-- The ticket remains `IN_PROGRESS / PUBLICATION` pending protected exact-head
-  review and merge; local validation is not merge authorization.
+- Validator App approved exact implementation head
+  `c676321fdf08ffef7296f87b3ee5abcd5f3cafb5`, binding repository, PR #7,
+  ticket-004, correlation ID and actor. Its advisory LLM was unavailable, so
+  the recorded approval rests explicitly on deterministic gates.
+- PR #7 merged as `main@2edd13e8e74ca0b7d00aa57087b5567eebf05633`
+  and GitHub automatically deleted `ticket-004-reconcile-standard-pins`.
+- This governance-only follow-up closes the ticket from the integrated default
+  branch; no implementation artifact changes in the closure.
 
 ## Non-goals
 
