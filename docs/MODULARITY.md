@@ -212,10 +212,13 @@ The capability URI and dry plan are not authority. Execution requires a
 separate exact grant or intent bound to the request, subject, revision, plan,
 and applicable policy. Historic receipts are evidence, not reusable authority.
 
-At publication of this version, the local Wellmanifest POA project has no Git
-commit or published repository. It is therefore an informative design input,
-not a normative pinned dependency. A future release MAY make it normative only
-after an immutable revision and conformance contract exist.
+Wellmanifest POA now publishes its closed v1 process contract at immutable
+revision `8424a7f5c977915ee08404b8b82d63e0f5e44ea2`. Modularity records that
+revision as an informative compatible standard: this document defines how a
+module may bind a `poa-capability`, but the reference workspace consumes no POA
+capability and therefore declares no POA module or link. A future profile MAY
+make POA normative only when it actually imports a named contract URI and
+digest; publication alone does not create a dependency or authority.
 
 ## 11. Interfaces and transports
 

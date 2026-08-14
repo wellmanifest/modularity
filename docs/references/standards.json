@@ -1,13 +1,13 @@
 {
   "schema": "subactor.modularity/standard-references/v1",
-  "generatedAt": "2026-08-12",
+  "generatedAt": "2026-08-14",
   "standards": [
     {
       "id": "wellmanifest.dsl",
       "relation": "normative",
       "status": "published",
       "repository": "https://github.com/wellmanifest/dsl",
-      "revision": "550e5f441c709e15f2679c1af151352d1eba2f1e",
+      "revision": "b7d0595c95e5abbb48ebfdbdae0bc6d43c6f82f4",
       "artifact": "spec/DSL_STANDARD.md",
       "usage": "Canonical DSL ownership, hashing, effects, findings, LLM boundaries and conformance."
     },
@@ -32,12 +32,11 @@
     {
       "id": "wellmanifest.poa",
       "relation": "informative",
-      "status": "draft",
-      "repository": null,
-      "revision": null,
+      "status": "published",
+      "repository": "https://github.com/wellmanifest/poa",
+      "revision": "8424a7f5c977915ee08404b8b82d63e0f5e44ea2",
       "artifact": "docs/ARCHITECTURE.md",
-      "usage": "Local design input for Process-Oriented Architecture capability resolution, dry planning, separate grants, bounded execution and receipts.",
-      "publicationBlocker": "The local wellmanifest/poa project has no Git commit and no GitHub repository; it cannot be an immutable normative dependency."
+      "usage": "Published informative design input for Process-Oriented Architecture capability resolution, dry planning, separate grants, bounded execution and receipts; no POA capability is imported by the reference workspace."
     }
   ]
 }
