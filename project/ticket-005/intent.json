@@ -1,0 +1,81 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-005",
+  "summary": "Single-exporter contract for the lifecycle engine",
+  "workstream": "governance",
+  "classification": {
+    "kind": "SERVICE",
+    "priority": "P2",
+    "origin": "health"
+  },
+  "allowedPaths": [
+    "README.md",
+    "project/ticket-005/**",
+    "TODO.md",
+    "project/TICKETS.md"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "f6ba47b1c5a0730af50357b80137578228e25e04",
+    "targetBranch": "main",
+    "outcome": "The lifecycle engine has one named exporter and the six vendored copies are declared facades bound to a parity gate, so drift cannot start silently",
+    "nonGoals": [
+      "No code moved or deleted in any lifecycle repository",
+      "No parity workflow added to the six consumers in this ticket",
+      "No change to the engine itself"
+    ],
+    "complexity": "XS",
+    "estimatedMinutes": 25,
+    "budgets": {
+      "maxImplementationFiles": 1,
+      "maxAffectedComponents": 1,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "wellmanifest/lifecycle owns the engine: it holds src/lifecycle.py plus tests/test_lifecycle.py and its README states the core is deliberately domain-independent. The six standard/lifecycle.py files in git-, legal-, product-, saas-, ticket- and twin-lifecycle are byte-identical vendored copies of it, so they are facades under the contractOwnership=single-exporter rule this repository already defines for commercial sheets. Record that contract here; the parity gate itself belongs to the consumers and is separate follow-up work.",
+      "components": [
+        {
+          "name": "single-exporter-contracts",
+          "paths": ["README.md"]
+        }
+      ],
+      "responsibilityChanges": true,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": { "impact": "none", "states": [], "evidence": [] },
+      "rollback": "Revert the README section; no consumer repository is touched"
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-01",
+        "commands": [
+          "grep -n 'wellmanifest/lifecycle' README.md"
+        ],
+        "evidence": "README names wellmanifest/lifecycle as the exporter of the lifecycle engine and the six repositories as facades"
+      },
+      {
+        "criterion": "AC-02",
+        "commands": [
+          "md5sum ../lifecycle/src/lifecycle.py ../*-lifecycle/standard/lifecycle.py | awk '{print $1}' | sort -u | wc -l"
+        ],
+        "evidence": "Prints 1: the exporter and all six facades are still byte-identical, so the contract records the current state rather than proposing a migration"
+      },
+      {
+        "criterion": "AC-03",
+        "commands": [
+          "./project/governance-check.sh --actor agent --base f6ba47b1c5a0730af50357b80137578228e25e04 --head HEAD"
+        ],
+        "evidence": "Gate resolves the diff to ticket-005"
+      }
+    ]
+  }
+}
