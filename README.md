@@ -28,6 +28,27 @@ facade amounts, entitlements, tokens or forbidden terms diverge.
 Standards pointers (no product content): [`wellmanifest/offer`](../offer),
 [`wellmanifest/brand`](../brand).
 
+## Internal engine contracts
+
+The same rule governs shared implementation inside wellmanifest, not only
+commercial sheets. An engine copied into several packs is a single-exporter
+contract: one repository owns it, the rest hold facades, and a parity gate must
+fail before merge when a facade diverges from its exporter.
+
+| Contract | Exporter (HOME) | Consumers (ADOPT / facade) |
+| --- | --- | --- |
+| Lifecycle engine | [`wellmanifest/lifecycle`](../lifecycle) (`src/lifecycle.py`, with `tests/test_lifecycle.py`) | `standard/lifecycle.py` in `git-`, `legal-`, `product-`, `saas-`, `ticket-` and `twin-lifecycle` |
+
+The six facades are byte-identical to the exporter today — one digest across all
+seven files, 740 lines each — so this table records the current state rather
+than proposing a migration. What is missing is the gate: nothing would notice
+the first divergence, and an engine edited independently in six places diverges
+quietly rather than loudly.
+
+A facade must not extend the engine. A pack needing behaviour the engine lacks
+raises it in the exporter; adding it locally makes the copy a second engine and
+retires it from this contract.
+
 ## Offer catalogs
 
 Public commercial sheets HOME in `subactor/offer` (ADOPT wellmanifest

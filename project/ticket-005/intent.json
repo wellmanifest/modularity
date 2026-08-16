@@ -31,7 +31,7 @@
       "No change to the engine itself"
     ],
     "complexity": "XS",
-    "estimatedMinutes": 25,
+    "estimatedMinutes": 10,
     "budgets": {
       "maxImplementationFiles": 1,
       "maxAffectedComponents": 1,
@@ -40,17 +40,23 @@
     },
     "architecture": {
       "status": "accepted",
-      "decision": "wellmanifest/lifecycle owns the engine: it holds src/lifecycle.py plus tests/test_lifecycle.py and its README states the core is deliberately domain-independent. The six standard/lifecycle.py files in git-, legal-, product-, saas-, ticket- and twin-lifecycle are byte-identical vendored copies of it, so they are facades under the contractOwnership=single-exporter rule this repository already defines for commercial sheets. Record that contract here; the parity gate itself belongs to the consumers and is separate follow-up work.",
+      "decision": "wellmanifest/lifecycle owns the engine: it holds src/lifecycle.py plus tests/test_lifecycle.py and its README states the core is deliberately domain-independent. The six standard/lifecycle.py files in git-, legal-, product-, saas-, ticket- and twin-lifecycle are byte-identical vendored copies of it, so they are facades under the contractOwnership=single-exporter rule this repository already defines for commercial sheets. Record that contract here; the parity gate itself belongs to the consumers and is separate follow-up work. This ticket moves no responsibility: the engine already lives in wellmanifest/lifecycle and the six copies already exist. It records the ownership that is in place and names the missing gate.",
       "components": [
         {
           "name": "single-exporter-contracts",
-          "paths": ["README.md"]
+          "paths": [
+            "README.md"
+          ]
         }
       ],
-      "responsibilityChanges": true,
+      "responsibilityChanges": false,
       "interfaceChanges": [],
       "dataChanges": [],
-      "ui": { "impact": "none", "states": [], "evidence": [] },
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
       "rollback": "Revert the README section; no consumer repository is touched"
     },
     "runtimeDependencies": [],
