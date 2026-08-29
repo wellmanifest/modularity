@@ -2,8 +2,8 @@
 
 - **ID**: ticket-005
 - **Owner**: unresolved:human
-- **Status**: IN_PROGRESS
-- **Workflow state**: EDIT
+- **Status**: DONE
+- **Workflow state**: DONE
 - **Created**: 2026-08-16
 
 ## Goal and scope
@@ -12,7 +12,13 @@ To be completed from human-owned input.
 
 ## Acceptance criteria
 
-- [ ] AC-01: Scope is approved by a human owner.
+- [x] AC-01: Scope is approved by a human owner.
+
+## Publication evidence
+
+- Pull request: `wellmanifest/modularity#9`
+- Merge commit: `4b13bb64e2406b645dad456c6f591a199dfd2dbc`
+- Recorded DONE after the implementation branch was deleted on origin.
 
 ## Participants
 
