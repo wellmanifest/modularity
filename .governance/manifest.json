@@ -38,6 +38,7 @@
       },
       "governance": {
         "ownedPaths": [
+          ".gitignore",
           ".governance/**",
           "AGENTS.md",
           "README.md",

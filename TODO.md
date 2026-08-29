@@ -2,6 +2,11 @@
 
 ## Active
 
+- [ ] [`ticket-006`](project/ticket-006/README.md): ignore Python test
+  artifacts and declare `.gitignore` on the governance workstream. Current
+  state: `IN_PROGRESS / EDIT`.
+- [x] [`ticket-005`](project/ticket-005/README.md): name the lifecycle engine
+  exporter. Merged in pull request #9; recorded `DONE / DONE`.
 - [x] [`ticket-004`](project/ticket-004/README.md): reconcile Modularity's DSL
   revision and schema digest with the immutable pin used by SSOT, and replace
   the stale POA no-repository placeholder with its published revision while
