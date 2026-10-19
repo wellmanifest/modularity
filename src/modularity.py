@@ -15,6 +15,9 @@ from pathlib import Path
 from typing import Any, Iterable, Sequence
 from urllib.parse import urlparse
 
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 
 IDENTIFIER = re.compile(r"^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$")
 SEMVER = re.compile(
@@ -33,31 +36,8 @@ LAYER_ORDER = {
     "deployment": 4,
 }
 
-ROOT_FIELDS = {
-    "$schema",
-    "schema",
-    "id",
-    "version",
-    "description",
-    "owners",
-    "standards",
-    "modules",
-    "links",
-    "policies",
-    "analysisScope",
-    "conformance",
-}
-ROOT_REQUIRED = {
-    "schema",
-    "id",
-    "version",
-    "owners",
-    "standards",
-    "modules",
-    "links",
-    "policies",
-    "conformance",
-}
+ROOT_FIELDS = {"$schema", "schema", "id", "version", "description", "owners", "standards", "modules", "links", "policies", "analysisScope", "conformance"}
+ROOT_REQUIRED = {"schema", "id", "version", "owners", "standards", "modules", "links", "policies", "conformance"}
 
 
 class DuplicateKeyError(ValueError):
@@ -185,13 +165,7 @@ class Validator:
     def schema(self, path: str) -> None:
         self.add("MOD-SCHEMA-001", path)
 
-    def object_shape(
-        self,
-        value: Any,
-        path: str,
-        allowed: set[str],
-        required: set[str],
-    ) -> bool:
+    def object_shape(self, value: Any, path: str, allowed: set[str], required: set[str]) -> bool:
         if not isinstance(value, dict):
             self.schema(path)
             return False
@@ -227,15 +201,7 @@ class Validator:
             self.schema(path)
 
     def standard(self, value: Any, path: str) -> None:
-        allowed = {
-            "id",
-            "relation",
-            "status",
-            "repository",
-            "revision",
-            "artifact",
-            "note",
-        }
+        allowed = {"id", "relation", "status", "repository", "revision", "artifact", "note"}
         if not self.object_shape(value, path, allowed, {"id", "relation", "status"}):
             return
         self.identifier(value.get("id"), f"{path}.id")
@@ -287,15 +253,7 @@ class Validator:
         self.identifier(value.get("id"), f"{path}.id")
         if not _is_uri(value.get("uri")):
             self.schema(f"{path}.uri")
-        if value.get("kind") not in {
-            "dsl",
-            "json-schema",
-            "protobuf",
-            "lifecycle",
-            "poa-capability",
-            "twin-trait",
-            "other",
-        }:
+        if value.get("kind") not in {"dsl", "json-schema", "protobuf", "lifecycle", "poa-capability", "twin-trait", "other"}:
             self.schema(f"{path}.kind")
         if not _is_semver(value.get("version")):
             self.schema(f"{path}.version")
@@ -335,12 +293,7 @@ class Validator:
         self.owners(value.get("owners"), f"{path}.owners")
         if value.get("layer") not in LAYER_ORDER:
             self.schema(f"{path}.layer")
-        if value.get("lifecycle") not in {
-            "experimental",
-            "stable",
-            "deprecated",
-            "retired",
-        }:
+        if value.get("lifecycle") not in {"experimental", "stable", "deprecated", "retired"}:
             self.schema(f"{path}.lifecycle")
         self.source(value.get("source"), f"{path}.source")
         self.state(value.get("state"), f"{path}.state")
@@ -398,122 +351,16 @@ class Validator:
             self.add("MOD-COMPOSE-001", f"{path}.generation")
 
     def policies(self, value: Any, path: str) -> None:
-        expected: dict[str, Any] = {
-            "unknownFields": "reject",
-            "cycles": "reject",
-            "layerDirection": "higher-to-same-or-lower",
-            "contractOwnership": "single-exporter",
-            "stateOwnership": "single-writer",
-            "authority": "external-reference-only",
-            "twinAuthority": "observational-only",
-            "llmAuthority": "propose-only",
-        }
-        allowed = set(expected) | {"allowDeprecated"}
-        if not self.object_shape(value, path, allowed, allowed):
-            return
-        for field, wanted in expected.items():
-            if value.get(field) != wanted:
-                self.schema(f"{path}.{field}")
-        if not isinstance(value.get("allowDeprecated"), bool):
-            self.schema(f"{path}.allowDeprecated")
+        from modularity_semantics import check_policies
+        check_policies(self, value, path)
 
     def analysis_scope(self, value: Any, path: str) -> None:
-        allowed = {
-            "includePaths",
-            "excludePaths",
-            "managedPaths",
-            "generatedPaths",
-            "llm",
-        }
-        if not self.object_shape(value, path, allowed, allowed):
-            return
-        path_lists: dict[str, list[str]] = {}
-        for field in ("includePaths", "excludePaths", "managedPaths", "generatedPaths"):
-            entries = value.get(field)
-            if not isinstance(entries, list) or (
-                field == "includePaths" and not entries
-            ):
-                self.add("MOD-ANALYSIS-001", f"{path}.{field}")
-                continue
-            path_lists[field] = []
-            for index, entry in enumerate(entries):
-                if not _is_relative_path(entry):
-                    self.add("MOD-PATH-001", f"{path}.{field}[{index}]")
-                else:
-                    path_lists[field].append(entry)
-            if len(path_lists[field]) != len(set(path_lists[field])):
-                self.add("MOD-ANALYSIS-001", f"{path}.{field}")
-        managed = set(path_lists.get("managedPaths", []))
-        generated = set(path_lists.get("generatedPaths", []))
-        if any(
-            _glob_covers(left, right) or _glob_covers(right, left)
-            for left in managed
-            for right in generated
-        ):
-            self.add("MOD-ANALYSIS-001", path)
-        includes = path_lists.get("includePaths", [])
-        excludes = path_lists.get("excludePaths", [])
-        if includes and all(
-            any(_glob_covers(exclude, include) for exclude in excludes)
-            for include in includes
-        ):
-            self.add("MOD-ANALYSIS-001", f"{path}.includePaths")
-        llm = value.get("llm")
-        llm_fields = {
-            "inputPolicy",
-            "maxPromptTokens",
-            "maxFindingsPerBatch",
-            "wholeGraphPolicy",
-            "requireProvenance",
-        }
-        if not self.object_shape(llm, f"{path}.llm", llm_fields, llm_fields):
-            self.add("MOD-LLM-001", f"{path}.llm")
-            return
-        valid = (
-            llm.get("inputPolicy") == "intent-diff-and-findings"
-            and isinstance(llm.get("maxPromptTokens"), int)
-            and not isinstance(llm.get("maxPromptTokens"), bool)
-            and 4096 <= llm["maxPromptTokens"] <= 200000
-            and isinstance(llm.get("maxFindingsPerBatch"), int)
-            and not isinstance(llm.get("maxFindingsPerBatch"), bool)
-            and 1 <= llm["maxFindingsPerBatch"] <= 200
-            and llm.get("wholeGraphPolicy") == "reject"
-            and llm.get("requireProvenance") is True
-        )
-        if not valid:
-            self.add("MOD-LLM-001", f"{path}.llm")
+        from modularity_semantics import check_analysis_scope
+        check_analysis_scope(self, value, path)
 
     def conformance(self, value: Any, path: str) -> None:
-        if not self.object_shape(
-            value, path, {"levels", "commands"}, {"levels", "commands"}
-        ):
-            return
-        levels = value.get("levels")
-        allowed_levels = {"document", "graph", "standards", "interfaces", "advisory"}
-        if (
-            not isinstance(levels, list)
-            or not levels
-            or len(levels) != len(set(item for item in levels if isinstance(item, str)))
-            or any(
-                not isinstance(item, str) or item not in allowed_levels
-                for item in levels
-            )
-        ):
-            self.schema(f"{path}.levels")
-        commands = value.get("commands")
-        if not isinstance(commands, list) or not commands:
-            self.add("MOD-CONFORMANCE-001", f"{path}.commands")
-            return
-        for index, command in enumerate(commands):
-            if (
-                not isinstance(command, list)
-                or not command
-                or any(
-                    not isinstance(arg, str) or not arg or len(arg) > 1000
-                    for arg in command
-                )
-            ):
-                self.add("MOD-CONFORMANCE-001", f"{path}.commands[{index}]")
+        from modularity_semantics import check_conformance
+        check_conformance(self, value, path)
 
     def document_shape(self, document: Any) -> None:
         if not self.object_shape(document, "$", ROOT_FIELDS, ROOT_REQUIRED):
@@ -560,237 +407,12 @@ class Validator:
         self.conformance(document.get("conformance"), "$.conformance")
 
     def local_digest(self, contract: dict[str, Any], path: str) -> None:
-        relative = contract.get("path")
-        digest = contract.get("digest")
-        if (
-            self.root is None
-            or not _is_relative_path(relative)
-            or not _is_digest(digest)
-        ):
-            return
-        candidate = (self.root / relative).resolve()
-        try:
-            candidate.relative_to(self.root)
-        except ValueError:
-            self.add("MOD-PATH-001", f"{path}.path")
-            return
-        if not candidate.is_file():
-            return
-        observed = "sha256:" + hashlib.sha256(candidate.read_bytes()).hexdigest()
-        if observed != digest:
-            self.add("MOD-DIGEST-001", f"{path}.digest")
+        from modularity_semantics import check_local_digest
+        check_local_digest(self, contract, path)
 
     def semantics(self, document: Any) -> None:
-        if not isinstance(document, dict):
-            return
-        raw_modules = document.get("modules")
-        raw_links = document.get("links")
-        if not isinstance(raw_modules, list) or not isinstance(raw_links, list):
-            return
-        modules = [
-            item
-            for item in raw_modules
-            if isinstance(item, dict) and _is_identifier(item.get("id"))
-        ]
-        links = [item for item in raw_links if isinstance(item, dict)]
-        module_paths = {
-            id(item): f"$.modules[{index}]"
-            for index, item in enumerate(raw_modules)
-            if isinstance(item, dict)
-        }
-        link_paths = {
-            id(item): f"$.links[{index}]"
-            for index, item in enumerate(raw_links)
-            if isinstance(item, dict)
-        }
-
-        all_ids = [item.get("id") for item in modules] + [
-            item.get("id") for item in links if _is_identifier(item.get("id"))
-        ]
-        duplicate_ids = {item for item, count in Counter(all_ids).items() if count > 1}
-        for module in modules:
-            if module.get("id") in duplicate_ids:
-                self.add("MOD-ID-001", f"{module_paths[id(module)]}.id")
-        for link in links:
-            if link.get("id") in duplicate_ids:
-                self.add("MOD-ID-001", f"{link_paths[id(link)]}.id")
-
-        module_by_id: dict[str, dict[str, Any]] = {}
-        for module in modules:
-            module_by_id.setdefault(module["id"], module)
-
-        contracts_by_uri: dict[
-            str, list[tuple[dict[str, Any], dict[str, Any], str]]
-        ] = defaultdict(list)
-        for module in modules:
-            module_path = module_paths[id(module)]
-            contracts = module.get("contracts")
-            if not isinstance(contracts, list):
-                continue
-            local_ids = [item.get("id") for item in contracts if isinstance(item, dict)]
-            duplicate_local = {
-                item
-                for item, count in Counter(local_ids).items()
-                if item is not None and count > 1
-            }
-            for index, contract in enumerate(contracts):
-                if not isinstance(contract, dict):
-                    continue
-                contract_path = f"{module_path}.contracts[{index}]"
-                if contract.get("id") in duplicate_local:
-                    self.add("MOD-CONTRACT-001", f"{contract_path}.id")
-                uri = contract.get("uri")
-                if _is_uri(uri):
-                    contracts_by_uri[uri].append((module, contract, contract_path))
-                self.local_digest(contract, contract_path)
-        for exports in contracts_by_uri.values():
-            if len(exports) > 1:
-                for _, _, contract_path in exports:
-                    self.add("MOD-CONTRACT-001", f"{contract_path}.uri")
-
-        adjacency: dict[str, set[str]] = {
-            module_id: set() for module_id in module_by_id
-        }
-        for link in links:
-            link_path = link_paths[id(link)]
-            consumer_id = link.get("from")
-            provider_id = link.get("to")
-            consumer = module_by_id.get(consumer_id)
-            provider = module_by_id.get(provider_id)
-            if consumer is None:
-                self.add("MOD-LINK-001", f"{link_path}.from")
-            if provider is None:
-                self.add("MOD-LINK-001", f"{link_path}.to")
-            if consumer_id == provider_id and consumer is not None:
-                self.add("MOD-LINK-002", link_path)
-            if consumer is None or provider is None:
-                continue
-            adjacency[consumer_id].add(provider_id)
-            provider_exports = [
-                item
-                for item in contracts_by_uri.get(link.get("contract"), [])
-                if item[0].get("id") == provider_id
-            ]
-            if len(provider_exports) != 1:
-                self.add("MOD-CONTRACT-002", f"{link_path}.contract")
-                contract = None
-            else:
-                contract = provider_exports[0][1]
-            consumer_layer = LAYER_ORDER.get(consumer.get("layer"))
-            provider_layer = LAYER_ORDER.get(provider.get("layer"))
-            if (
-                consumer_layer is not None
-                and provider_layer is not None
-                and consumer_layer < provider_layer
-            ):
-                self.add("MOD-LAYER-001", link_path)
-            lifecycle = provider.get("lifecycle")
-            if lifecycle == "retired":
-                self.add("MOD-LIFECYCLE-001", link_path)
-            if (
-                lifecycle == "deprecated"
-                and isinstance(document.get("policies"), dict)
-                and document["policies"].get("allowDeprecated") is False
-            ):
-                self.add("MOD-LIFECYCLE-002", link_path)
-            if (
-                contract is not None
-                and contract.get("kind") == "twin-trait"
-                and link.get("mode") != "observe"
-            ):
-                self.add("MOD-TWIN-001", link_path)
-            if (
-                contract is not None
-                and contract.get("kind") == "poa-capability"
-                and link.get("mode") != "invoke"
-            ):
-                self.add("MOD-POA-001", link_path)
-            generation = link.get("generation")
-            if link.get("mode") == "generate" and isinstance(generation, dict):
-                output_exports = contracts_by_uri.get(
-                    generation.get("outputContract"), []
-                )
-                if len(output_exports) != 1:
-                    self.add(
-                        "MOD-COMPOSE-001",
-                        f"{link_path}.generation.outputContract",
-                    )
-        visiting: set[str] = set()
-        visited: set[str] = set()
-        cyclic: set[str] = set()
-
-        def visit(node: str, trail: list[str]) -> None:
-            if node in visiting:
-                start = trail.index(node)
-                cyclic.update(trail[start:])
-                return
-            if node in visited:
-                return
-            visiting.add(node)
-            trail.append(node)
-            for neighbor in sorted(adjacency.get(node, set())):
-                visit(neighbor, trail)
-            trail.pop()
-            visiting.remove(node)
-            visited.add(node)
-
-        for module_id in sorted(adjacency):
-            visit(module_id, [])
-        for link in links:
-            if link.get("from") in cyclic and link.get("to") in cyclic:
-                self.add("MOD-GRAPH-001", link_paths[id(link)])
-
-        state_owners: dict[str, list[str]] = defaultdict(list)
-        state_domains: set[str] = set()
-        for module in modules:
-            state = module.get("state")
-            if not isinstance(state, dict) or not _is_identifier(state.get("domain")):
-                continue
-            domain = state["domain"]
-            state_domains.add(domain)
-            if state.get("role") == "owner":
-                state_owners[domain].append(module["id"])
-        for domain in state_domains:
-            if len(state_owners[domain]) != 1:
-                for module in modules:
-                    state = module.get("state")
-                    if isinstance(state, dict) and state.get("domain") == domain:
-                        self.add("MOD-STATE-001", f"{module_paths[id(module)]}.state")
-        for module in modules:
-            state = module.get("state")
-            if not isinstance(state, dict) or state.get("role") != "projection":
-                continue
-            domain = state.get("domain")
-            owners = state_owners.get(domain, [])
-            if len(owners) != 1 or state.get("owner") != owners[0]:
-                self.add("MOD-STATE-002", f"{module_paths[id(module)]}.state.owner")
-
-        scope = document.get("analysisScope")
-        if isinstance(scope, dict):
-            excluded = scope.get("excludePaths")
-            if isinstance(excluded, list):
-                protected_paths: list[str] = []
-                for module in modules:
-                    source = module.get("source")
-                    if isinstance(source, dict) and isinstance(
-                        source.get("manifest"), str
-                    ):
-                        protected_paths.append(source["manifest"])
-                    contracts = module.get("contracts")
-                    if isinstance(contracts, list):
-                        protected_paths.extend(
-                            contract["path"]
-                            for contract in contracts
-                            if isinstance(contract, dict)
-                            and isinstance(contract.get("path"), str)
-                        )
-                if any(
-                    fnmatch.fnmatchcase(protected, pattern)
-                    for protected in protected_paths
-                    for pattern in excluded
-                    if isinstance(pattern, str)
-                ):
-                    self.add("MOD-ANALYSIS-001", "$.analysisScope.excludePaths")
+        from modularity_semantics import evaluate_semantics
+        evaluate_semantics(self, document)
 
     def validate(self, document: Any) -> list[Finding]:
         self.document_shape(document)

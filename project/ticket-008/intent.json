@@ -1,0 +1,86 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-008",
+  "summary": "Split modularity validator into shape and graph semantics modules under 500 lines",
+  "workstream": "application",
+  "classification": {
+    "kind": "SERVICE",
+    "priority": "P2",
+    "origin": "health"
+  },
+  "allowedPaths": [
+    "project/ticket-008/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "src/modularity.py",
+    "src/modularity_semantics.py",
+    "tests/test_modularity.py",
+    "project/ticket-006/README.md",
+    "project/ticket-007/README.md"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null,
+  "delivery": {
+    "acceptedBaseSha": "9fe13d213786e300acd52a27177c9ac1bf6d2fc7",
+    "targetBranch": "main",
+    "outcome": "src/modularity.py is split into src/modularity.py (shape & CLI facade) and src/modularity_semantics.py (graph, contract, layer, cycle, and state semantics) with both modules strictly under 500 lines and zero horizontal complexity hotspots.",
+    "nonGoals": [
+      "No schema or diagnostic behavior changes."
+    ],
+    "complexity": "S",
+    "estimatedMinutes": 20,
+    "budgets": {
+      "maxImplementationFiles": 5,
+      "maxAffectedComponents": 1,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "architecture": {
+      "status": "accepted",
+      "decision": "Extract graph and state semantic analysis into src/modularity_semantics.py while preserving Validator.semantics and all public symbols in src/modularity.py (REUSE-011, REUSE-015).",
+      "components": [
+        {
+          "name": "modularity-validator",
+          "paths": [
+            "src/modularity.py",
+            "src/modularity_semantics.py",
+            "tests/test_modularity.py",
+            "project/ticket-006/README.md",
+            "project/ticket-007/README.md"
+          ]
+        }
+      ],
+      "responsibilityChanges": false,
+      "interfaceChanges": [],
+      "dataChanges": [],
+      "ui": {
+        "impact": "none",
+        "states": [],
+        "evidence": []
+      },
+      "rollback": "Revert the ticket commit."
+    },
+    "runtimeDependencies": [],
+    "validation": [
+      {
+        "criterion": "AC-01",
+        "commands": [
+          "pytest -q"
+        ],
+        "evidence": "All modularity unit tests pass and both modules are <= 500 lines."
+      },
+      {
+        "criterion": "AC-02",
+        "commands": [
+          "./project/governance-check.sh --actor agent"
+        ],
+        "evidence": "GOV-PASS on the ticket branch."
+      }
+    ]
+  }
+}
