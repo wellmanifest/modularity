@@ -10,6 +10,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 import re
+from modularity import _glob_covers, _is_digest, _is_relative_path
 
 IDENTIFIER = re.compile(r"^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$")
 DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
@@ -28,18 +29,6 @@ def _is_uri(value: Any) -> bool:
 
 def _is_identifier(value: Any) -> bool:
     return isinstance(value, str) and len(value) <= 160 and bool(IDENTIFIER.fullmatch(value))
-
-
-def _is_digest(value: Any) -> bool:
-    return isinstance(value, str) and bool(DIGEST.fullmatch(value))
-
-
-def _is_relative_path(value: Any) -> bool:
-    if not isinstance(value, str) or not value or len(value) > 500:
-        return False
-    if value.startswith("/") or "\\" in value:
-        return False
-    return ".." not in value.split("/")
 
 
 def check_local_digest(validator: Any, contract: dict[str, Any], path: str) -> None:
@@ -213,15 +202,6 @@ def evaluate_semantics(validator: Any, document: Any) -> None:
                 )
         if any(fnmatch.fnmatchcase(p, pat) for p in protected_paths for pat in excluded if isinstance(pat, str)):
             validator.add("MOD-ANALYSIS-001", "$.analysisScope.excludePaths")
-
-
-def _glob_covers(outer: str, inner: str) -> bool:
-    if outer in {"*", "**", "**/*"} or outer == inner:
-        return True
-    if outer.endswith("/**"):
-        prefix = outer[:-3].rstrip("/")
-        return inner == prefix or inner.startswith(prefix + "/")
-    return False
 
 
 def check_analysis_scope(validator: Any, value: Any, path: str) -> None:

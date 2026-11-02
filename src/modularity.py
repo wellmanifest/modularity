@@ -476,7 +476,7 @@ def main(argv: Iterable[str] | None = None) -> int:
             if args.format == "json"
             else render_text(args.document, findings)
         )
-        print(report)
+        sys.stdout.write(f"{report}\n")
         return 1 if findings else 0
     except Exception:
         finding = _internal_finding()
@@ -485,7 +485,7 @@ def main(argv: Iterable[str] | None = None) -> int:
             if args.format == "json"
             else render_text(args.document, [finding])
         )
-        print(report, file=sys.stderr)
+        sys.stderr.write(f"{report}\n")
         return 2
 
 

@@ -2,7 +2,7 @@
 
 - **ID**: ticket-008
 - **Owner**: agent:antigravity under SESSION_EXECUTION_AUTHORIZATION
-- **Status**: IN_PROGRESS
+- **Status**: DONE
 - **Workflow state**: EDIT
 - **Created**: 2026-10-19
 

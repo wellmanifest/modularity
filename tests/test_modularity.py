@@ -372,5 +372,12 @@ class IntegrityAndReportingTests(unittest.TestCase):
         self.assertIn("MOD-INTERNAL-001", error.getvalue())
 
 
+    def test_semantics_helpers_are_ssot_identical_with_modularity(self) -> None:
+        import modularity_semantics
+        self.assertIs(modularity._is_digest, modularity_semantics._is_digest)
+        self.assertIs(modularity._is_relative_path, modularity_semantics._is_relative_path)
+        self.assertIs(modularity._glob_covers, modularity_semantics._glob_covers)
+
+
 if __name__ == "__main__":
     unittest.main()
