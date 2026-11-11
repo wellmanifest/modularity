@@ -1,0 +1,91 @@
+{
+  "allowedPaths": [
+    "project/ticket-010/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "docs/dsl-manifest.json",
+    "docs/schemas/modularity-validation-report.schema.v1.json",
+    "pyproject.toml"
+  ],
+  "classification": {
+    "kind": "BUG",
+    "origin": "health",
+    "priority": "P1"
+  },
+  "conflictsWith": [],
+  "delivery": {
+    "acceptedBaseSha": "72d4a693efa3e3110afcf758a0efd270dedd3a13",
+    "architecture": {
+      "components": [
+        {
+          "name": "modularity-integration",
+          "paths": [
+            "pyproject.toml",
+            "docs/dsl-manifest.json",
+            "docs/schemas/modularity-validation-report.schema.v1.json"
+          ]
+        }
+      ],
+      "dataChanges": [],
+      "decision": "Configure pytest pythonpath/testpaths in pyproject.toml and bind the validation-report v1 schema and dsl-input-output decisionProtocol in docs/dsl-manifest.json.",
+      "interfaceChanges": [],
+      "responsibilityChanges": false,
+      "rollback": "Revert the ticket commit.",
+      "status": "accepted",
+      "ui": {
+        "evidence": [],
+        "impact": "none",
+        "states": []
+      }
+    },
+    "budgets": {
+      "maxAffectedComponents": 2,
+      "maxImplementationFiles": 5,
+      "maxPublicInterfaceChanges": 1,
+      "maxRuntimeDependencies": 0
+    },
+    "complexity": "S",
+    "estimatedMinutes": 15,
+    "nonGoals": [
+      "No validator runtime behavior changes in this integration slice."
+    ],
+    "outcome": "Standalone pytest passes cleanly and docs/dsl-manifest.json passes wellmanifest/dsl conformance with 0 errors.",
+    "runtimeDependencies": [],
+    "targetBranch": "main",
+    "validation": [
+      {
+        "commands": [
+          "pytest -q"
+        ],
+        "criterion": "AC-01",
+        "evidence": "Standalone pytest collects and passes all modularity unit tests."
+      },
+      {
+        "commands": [
+          "python3 -m json.tool docs/dsl-manifest.json",
+          "python3 -m json.tool docs/schemas/modularity-validation-report.schema.v1.json"
+        ],
+        "criterion": "AC-02",
+        "evidence": "DSL manifest and validation report JSON Schema parse cleanly and pass wellmanifest/dsl validation."
+      },
+      {
+        "commands": [
+          "./project/governance-check.sh --base origin/main",
+          "wellman check"
+        ],
+        "criterion": "AC-03",
+        "evidence": "Governance and Wellman standards gates pass with 0 errors."
+      }
+    ]
+  },
+  "dependsOn": [],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "integrationTicket": null,
+  "schema": "new-project.intent/v3",
+  "stacks": [],
+  "summary": "Wire standalone pytest pythonpath and align DSL manifest LLM boundary",
+  "ticket": "ticket-010",
+  "workstream": "integration"
+}

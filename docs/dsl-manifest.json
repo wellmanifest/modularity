@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/wellmanifest/dsl/b7d0595c95e5abbb48ebfdbdae0bc6d43c6f82f4/schemas/dsl-manifest.schema.json",
+  "$schema": "https://raw.githubusercontent.com/wellmanifest/dsl/a16b81f38667d2920cb49e1285e36d972583e94e/schemas/dsl-manifest.schema.json",
   "schema": "wellmanifest.dsl/manifest/v1",
   "id": "subactor.modularity",
   "name": "Subactor Modularity DSL",
@@ -11,7 +11,12 @@
     {
       "kind": "repository",
       "id": "github:subactor/modularity",
-      "responsibilities": ["semantics", "validation", "compatibility", "security"]
+      "responsibilities": [
+        "semantics",
+        "validation",
+        "compatibility",
+        "security"
+      ]
     }
   ],
   "source": {
@@ -35,6 +40,11 @@
       "path": "docs/schemas/modularity-workspace.schema.v1.json",
       "role": "normative-source",
       "digest": "sha256:98db51af5b17e9a480f587f462da52aafd70d8b40ae87d873d7a42fdd4fd5a68"
+    },
+    {
+      "path": "docs/schemas/modularity-validation-report.schema.v1.json",
+      "role": "schema",
+      "digest": "sha256:672b03370db60eefea3136d03234b1cbd08d578a624d5065d88b133be338f80f"
     },
     {
       "path": "docs/MODULARITY.md",
@@ -63,8 +73,14 @@
     }
   ],
   "namespaces": [
-    { "prefix": "subactor", "uri": "https://subactor.dev/" },
-    { "prefix": "modularity", "uri": "modularity://workspace/" }
+    {
+      "prefix": "subactor",
+      "uri": "https://subactor.dev/"
+    },
+    {
+      "prefix": "modularity",
+      "uri": "modularity://workspace/"
+    }
   ],
   "projections": [],
   "lifecycle": {
@@ -80,11 +96,16 @@
     "authoritySchema": null
   },
   "llm": {
-    "mode": "input",
-    "requestSchemas": ["docs/schemas/modularity-workspace.schema.v1.json"],
-    "responseSchemas": [],
+    "mode": "bidirectional",
+    "requestSchemas": [
+      "docs/schemas/modularity-workspace.schema.v1.json"
+    ],
+    "responseSchemas": [
+      "docs/schemas/modularity-validation-report.schema.v1.json"
+    ],
     "naturalLanguage": "forbidden",
     "sourceSchema": null,
+    "decisionProtocol": "dsl-input-output",
     "modelAuthority": "propose-only",
     "strict": true
   },
@@ -93,15 +114,24 @@
     "commandRoot": "docs",
     "errorRoot": "docs/ERROR",
     "criticalRoot": "docs/CRITICAL",
-    "commands": ["MODULARITY"],
+    "commands": [
+      "MODULARITY"
+    ],
     "errorCodes": [],
     "criticalCodes": []
   },
   "findingPolicy": {
     "schema": "wellmanifest.dsl/findings/v1",
-    "requiredProducers": ["subactor.modularity.validator"],
-    "securityProducers": ["subactor.modularity.validator"],
-    "blockingSeverities": ["error", "critical"],
+    "requiredProducers": [
+      "subactor.modularity.validator"
+    ],
+    "securityProducers": [
+      "subactor.modularity.validator"
+    ],
+    "blockingSeverities": [
+      "error",
+      "critical"
+    ],
     "requireEvaluable": true,
     "blockUnresolvedSecurity": true
   },
@@ -113,13 +143,18 @@
     "runtimeIsolation": false
   },
   "conformance": {
-    "levels": ["manifest", "contract", "llm-boundary"],
+    "levels": [
+      "manifest",
+      "contract",
+      "llm-boundary"
+    ],
     "commands": [
       "python3 -m json.tool docs/schemas/modularity-workspace.schema.v1.json",
+      "python3 -m json.tool docs/schemas/modularity-validation-report.schema.v1.json",
       "python3 -m json.tool docs/errors/catalog.json",
       "python3 -m json.tool docs/references/standards.json",
       "python3 -m json.tool docs/profiles/subactor-ecosystem.workspace.v1.json",
-      "PYTHONPATH=src python -m modularity docs/profiles/subactor-ecosystem.workspace.v1.json --format json"
+      "PYTHONPATH=src python3 -m modularity docs/profiles/subactor-ecosystem.workspace.v1.json --format json"
     ],
     "validExamples": [
       "docs/profiles/subactor-ecosystem.workspace.v1.json"
@@ -131,7 +166,7 @@
       "standard": "wellmanifest.dsl",
       "version": "0.1.0-dev",
       "relation": "implements",
-      "uri": "https://github.com/wellmanifest/dsl/tree/b7d0595c95e5abbb48ebfdbdae0bc6d43c6f82f4"
+      "uri": "https://github.com/wellmanifest/dsl/tree/a16b81f38667d2920cb49e1285e36d972583e94e"
     },
     {
       "standard": "subactor.lifecycle",
@@ -159,11 +194,11 @@
         "standard": "wellmanifest.dsl",
         "version": "0.1.0-dev",
         "repository": "https://github.com/wellmanifest/dsl",
-        "revision": "b7d0595c95e5abbb48ebfdbdae0bc6d43c6f82f4",
+        "revision": "a16b81f38667d2920cb49e1285e36d972583e94e",
         "contracts": [
           {
             "ref": "schema://wellmanifest.dev/dsl/manifest/v1",
-            "digest": "sha256:34d356b76bbd483372df84bb986e15bb84e9c1f8b11b7dc9e3a6c7276c85ed13"
+            "digest": "sha256:d128a2cab0459fab91788a062875242dc5cfd62fd9f37cab49c8adb42b28901d"
           }
         ]
       }
