@@ -1,0 +1,83 @@
+{
+  "allowedPaths": [
+    "project/ticket-014/README.md",
+    "project/ticket-015/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "src/modularity.py",
+    "tests/test_modularity_hardening.py"
+  ],
+  "classification": {
+    "kind": "BUG",
+    "origin": "health",
+    "priority": "P1"
+  },
+  "conflictsWith": [],
+  "delivery": {
+    "acceptedBaseSha": "7be2b1e759003c9c6210d3f33fe4359682b9f575",
+    "architecture": {
+      "components": [
+        {
+          "name": "modularity-validator",
+          "paths": [
+            "src/modularity.py",
+            "tests/test_modularity_hardening.py"
+          ]
+        }
+      ],
+      "dataChanges": [],
+      "decision": "Reject 10**400 JSON integer overflow and lone UTF-16 surrogates, load catalog.json via bounded regular-file I/O, validate max_bytes and rootless absolute ancestor symlinks, reject dot/empty URI and authority segments, anchor all regexes with \\A...\\Z, and mark merged ticket-014 DONE.",
+      "interfaceChanges": [],
+      "responsibilityChanges": false,
+      "rollback": "Revert the ticket commit via protected PR delivery.",
+      "status": "accepted",
+      "ui": {
+        "evidence": [],
+        "impact": "none",
+        "states": []
+      }
+    },
+    "budgets": {
+      "maxAffectedComponents": 1,
+      "maxImplementationFiles": 3,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "complexity": "S",
+    "estimatedMinutes": 15,
+    "nonGoals": [
+      "No schema or diagnostic code additions."
+    ],
+    "outcome": "Deterministic rejection of oversized JSON integers, lone UTF-16 surrogates, rootless absolute ancestor symlinks, and dot/empty URI or authority segments while keeping all modules below 500 lines and closing merged ticket-014.",
+    "runtimeDependencies": [],
+    "targetBranch": "main",
+    "validation": [
+      {
+        "commands": [
+          "PYTHONPATH=src:tests pytest -q",
+          "ruff check --no-cache src tests"
+        ],
+        "criterion": "AC-01",
+        "evidence": "project/ticket-015/README.md"
+      },
+      {
+        "commands": [
+          "./project/governance-check.sh --base origin/main",
+          "wellman check"
+        ],
+        "criterion": "AC-03",
+        "evidence": "project/ticket-015/README.md"
+      }
+    ]
+  },
+  "dependsOn": [],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "integrationTicket": null,
+  "schema": "new-project.intent/v3",
+  "stacks": [],
+  "summary": "Harden modularity JSON overflow/surrogates, rootless ancestor symlinks, and regex anchors",
+  "ticket": "ticket-015",
+  "workstream": "application"
+}
