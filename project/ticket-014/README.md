@@ -1,9 +1,9 @@
 # Ticket 014: Harden modularity regular-file inode stability, ancestor symlinks, and URI/path bounds
 
 - **ID**: ticket-014
-- **Owner**: unresolved:human
-- **Status**: IN_PROGRESS
-- **Workflow state**: EDIT
+- **Owner**: tom
+- **Status**: DONE
+- **Workflow state**: PUBLICATION
 - **Created**: 2026-11-11
 
 ## Goal and scope

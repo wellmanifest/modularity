@@ -192,13 +192,71 @@ class HardeningRegressionTests(unittest.TestCase):
 
         for bad_uri in (
             "https://example.test/../escape",
+            "https://example.test/./escape",
             "urn:subactor:../escape",
+            "urn:subactor:./escape",
+            "urn:subactor:",
+            "urn:subactor::v1",
             "http:///missing-host",
+            "https://example.test/\ud800",
         ):
             self.assertFalse(modularity._is_uri(bad_uri), bad_uri)
         self.assertFalse(modularity._is_relative_path("C:foo/bar"))
+        self.assertFalse(modularity._is_relative_path("docs/\ud800.json"))
         self.assertIsNone(modularity.REVISION.match("a" * 40 + "\n"))
         self.assertIsNone(modularity.SEMVER.match("1.0.0\n"))
+
+    def test_json_int_overflow_surrogates_rootless_ancestor_symlinks_and_anchors(self) -> None:
+        for bad_json in (
+            b'{"n": ' + b"1" + (b"0" * 400) + b"}",
+            b'{"n": -' + b"1" + (b"0" * 400) + b"}",
+            b'{"n": ' + (b"9" * 5000) + b"}",
+            b'{"a": "\\ud800"}',
+            b'{"\\udfff": 1}',
+        ):
+            with self.subTest(sample=bad_json[:24]), self.assertRaises(ValueError):
+                modularity.load_json_bytes(bad_json)
+
+        doc = valid_document()
+        doc["description"] = "bad \ud800 surrogate"
+        doc["owners"][0]["id"] = "team-\udfff"
+        doc["links"][2]["authorityRef"] = "authority://policy/../grants"
+        found = {(f.code, f.path) for f in modularity.validate_document(doc)}
+        self.assertIn(("MOD-SCHEMA-001", "$.description"), found)
+        self.assertIn(("MOD-SCHEMA-001", "$.owners[0].id"), found)
+        self.assertIn(("MOD-AUTH-001", "$.links[2].authorityRef"), found)
+        self.assertIsNone(modularity.AUTHORITY.fullmatch("authority://policy/./grants"))
+
+        for pattern in (
+            modularity.IDENTIFIER,
+            modularity.URI_SCHEME,
+            modularity.SEMVER,
+            modularity.REVISION,
+            modularity.DIGEST,
+            modularity.AUTHORITY,
+            modularity.WINDOWS_DRIVE_PREFIX,
+        ):
+            self.assertTrue(pattern.pattern.startswith(r"\A"), pattern.pattern)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            real_dir = root / "real_dir" / "sub"
+            real_dir.mkdir(parents=True)
+            doc_file = real_dir / "workspace.json"
+            doc_file.write_bytes(b"0123456789")
+            sym_dir = root / "sym_dir"
+            sym_dir.symlink_to(root / "real_dir")
+            self.assertEqual(
+                [f.code for f in modularity.validate_path(sym_dir / "sub" / "workspace.json")],
+                ["MOD-JSON-001"],
+            )
+            for bad_max in (0, -1, True, False):
+                with self.assertRaises(ValueError):
+                    modularity.read_regular_file_bytes(doc_file, max_bytes=bad_max)  # type: ignore[arg-type]
+                with self.assertRaises(ValueError):
+                    modularity.load_json_bytes(b"{}", max_bytes=bad_max)  # type: ignore[arg-type]
+            with self.assertRaises(OSError):
+                modularity.read_regular_file_bytes(doc_file, max_bytes=5)
 
 
 if __name__ == "__main__":

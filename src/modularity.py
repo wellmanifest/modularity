@@ -22,17 +22,21 @@ if str(Path(__file__).resolve().parent) not in sys.path:
 
 MAX_FILE_BYTES = 4 * 1024 * 1024
 MAX_JSON_DEPTH = 64
+MAX_JSON_INT_ABS = 10**400 - 1
 
-IDENTIFIER = re.compile(r"^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*\Z")
-URI_SCHEME = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*\Z")
+IDENTIFIER = re.compile(r"\A[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*\Z")
+URI_SCHEME = re.compile(r"\A[a-zA-Z][a-zA-Z0-9+.-]*\Z")
 SEMVER = re.compile(
-    r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
+    r"\A(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
     r"(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?"
     r"(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?\Z"
 )
-REVISION = re.compile(r"^[0-9a-f]{40}\Z")
-DIGEST = re.compile(r"^sha256:[0-9a-f]{64}\Z")
-AUTHORITY = re.compile(r"^authority://[a-z0-9][a-z0-9.-]*(?:/[A-Za-z0-9._~-]+)+\Z")
+REVISION = re.compile(r"\A[0-9a-f]{40}\Z")
+DIGEST = re.compile(r"\Asha256:[0-9a-f]{64}\Z")
+AUTHORITY = re.compile(
+    r"\Aauthority://[a-z0-9][a-z0-9.-]*(?:/(?![.]{1,2}(?:/|\Z))[A-Za-z0-9._~-]+)+\Z"
+)
+WINDOWS_DRIVE_PREFIX = re.compile(r"\A[A-Za-z]:")
 LAYER_ORDER = {"foundation": 0, "domain": 1, "application": 2, "interface": 3, "deployment": 4}
 
 ROOT_FIELDS = {"$schema", "schema", "id", "version", "description", "owners", "standards", "modules", "links", "policies", "analysisScope", "conformance"}
@@ -59,7 +63,7 @@ class Finding:
 @lru_cache(maxsize=1)
 def _catalog() -> dict[str, tuple[str, str]]:
     catalog_path = Path(__file__).resolve().parents[1] / "docs" / "errors" / "catalog.json"
-    data = json.loads(catalog_path.read_text(encoding="utf-8"))
+    data = load_json_bytes(read_regular_file_bytes(catalog_path))
     return {item["code"]: (item["severity"], item["message"]) for item in data["errors"]}
 
 
@@ -94,6 +98,23 @@ def _parse_finite_float(token: str) -> float:
     return parsed
 
 
+def _is_utf8(text: str) -> bool:
+    try:
+        text.encode("utf-8", errors="strict")
+        return True
+    except UnicodeEncodeError:
+        return False
+
+
+def _valid_str(value: Any, max_len: int) -> bool:
+    return isinstance(value, str) and 0 < len(value) <= max_len and _is_utf8(value)
+
+
+def _require_pos_int(max_bytes: int) -> None:
+    if isinstance(max_bytes, bool) or not isinstance(max_bytes, int) or max_bytes <= 0:
+        raise ValueError("max_bytes must be a positive integer")
+
+
 def _enforce_json_depth(value: Any, max_depth: int = MAX_JSON_DEPTH) -> None:
     stack: list[tuple[Any, int]] = [(value, 0)]
     while stack:
@@ -104,16 +125,24 @@ def _enforce_json_depth(value: Any, max_depth: int = MAX_JSON_DEPTH) -> None:
             for key, child in current.items():
                 if not isinstance(key, str):
                     raise TypeError("JSON object keys must be strings")
+                if not _is_utf8(key):
+                    raise ValueError("Lone UTF-16 surrogate is forbidden in JSON key")
                 stack.append((child, depth + 1))
         elif isinstance(current, list):
             for child in current:
                 stack.append((child, depth + 1))
+        elif isinstance(current, str):
+            if not _is_utf8(current):
+                raise ValueError("Lone UTF-16 surrogate is forbidden in JSON string")
+        elif type(current) is int and abs(current) > MAX_JSON_INT_ABS:
+            raise ValueError("JSON integer magnitude exceeds maximum bound")
         elif isinstance(current, float) and not math.isfinite(current):
             raise ValueError("Non-finite JSON float is forbidden")
 
 
-def read_regular_file_bytes(path: Path) -> bytes:
-    """Read a regular non-symlink file within MAX_FILE_BYTES without blocking on FIFOs."""
+def read_regular_file_bytes(path: Path, max_bytes: int = MAX_FILE_BYTES) -> bytes:
+    """Read a regular non-symlink file within max_bytes without blocking on FIFOs."""
+    _require_pos_int(max_bytes)
     lst = os.lstat(path)
     if stat.S_ISLNK(lst.st_mode):
         raise OSError(errno.ELOOP, "Symlink is forbidden", str(path))
@@ -123,16 +152,13 @@ def read_regular_file_bytes(path: Path) -> bytes:
         st = os.fstat(fd)
         if not stat.S_ISREG(st.st_mode) or (st.st_dev, st.st_ino) != (lst.st_dev, lst.st_ino):
             raise OSError(errno.EINVAL, "Not a stable regular file", str(path))
-        if st.st_size > MAX_FILE_BYTES:
+        if st.st_size > max_bytes:
             raise OSError(errno.EFBIG, "File exceeds maximum byte bound", str(path))
         chunks: list[bytes] = []
         total = 0
-        while True:
-            chunk = os.read(fd, 65536)
-            if not chunk:
-                break
+        while chunk := os.read(fd, min(65536, max_bytes + 1 - total)):
             total += len(chunk)
-            if total > MAX_FILE_BYTES:
+            if total > max_bytes:
                 raise OSError(errno.EFBIG, "File exceeds maximum byte bound", str(path))
             chunks.append(chunk)
         return b"".join(chunks)
@@ -140,9 +166,10 @@ def read_regular_file_bytes(path: Path) -> bytes:
         os.close(fd)
 
 
-def load_json_bytes(raw: bytes) -> Any:
+def load_json_bytes(raw: bytes, max_bytes: int = MAX_FILE_BYTES) -> Any:
     """Parse strict UTF-8 JSON and reject duplicate keys, NaN/Infinity, and excessive depth."""
-    if len(raw) > MAX_FILE_BYTES:
+    _require_pos_int(max_bytes)
+    if len(raw) > max_bytes:
         raise ValueError("JSON payload exceeds maximum byte bound")
     text = raw.decode("utf-8", errors="strict")
     try:
@@ -157,21 +184,17 @@ def load_json_bytes(raw: bytes) -> Any:
 
 
 def _is_uri(value: Any) -> bool:
-    if not isinstance(value, str) or not value or len(value) > 2048:
-        return False
-    if any(ch.isspace() or ord(ch) < 32 or ord(ch) == 127 for ch in value):
+    if not _valid_str(value, 2048) or any(ch.isspace() or ord(ch) < 32 or ord(ch) == 127 for ch in value):
         return False
     try:
         parsed = urlparse(value)
     except ValueError:
         return False
-    if not parsed.scheme or not URI_SCHEME.fullmatch(parsed.scheme):
-        return False
-    if ".." in re.split(r"[/:]", parsed.path):
+    if not parsed.scheme or not URI_SCHEME.fullmatch(parsed.scheme) or ({"." , ".."} & set(re.split(r"[/:]", parsed.path))):
         return False
     if value[len(parsed.scheme) :].startswith("://"):
         return bool(parsed.netloc)
-    return bool(parsed.netloc or parsed.path)
+    return bool(parsed.netloc or (parsed.path and "" not in parsed.path.split(":")))
 
 
 def _is_identifier(value: Any) -> bool:
@@ -191,9 +214,9 @@ def _is_digest(value: Any) -> bool:
 
 
 def _is_relative_path(value: Any) -> bool:
-    if not isinstance(value, str) or not value or len(value) > 500:
+    if not _valid_str(value, 500):
         return False
-    if value.startswith("/") or "\\" in value or bool(re.match(r"^[A-Za-z]:", value)):
+    if value.startswith("/") or "\\" in value or bool(WINDOWS_DRIVE_PREFIX.match(value)):
         return False
     if any(ord(ch) < 32 or ord(ch) == 127 for ch in value):
         return False
@@ -215,6 +238,9 @@ def _glob_covers(outer: str, inner: str) -> bool:
         prefix = outer[:-3].rstrip("/")
         return inner == prefix or inner.startswith(prefix + "/")
     return False
+
+
+import modularity_semantics as _ms
 
 
 class Validator:
@@ -260,17 +286,11 @@ class Validator:
             kind = owner.get("kind")
             if not isinstance(kind, str) or kind not in {"repository", "team", "person"}:
                 self.schema(f"{item_path}.kind")
-            owner_id = owner.get("id")
-            if not isinstance(owner_id, str) or not owner_id or len(owner_id) > 200:
+            if not _valid_str(owner.get("id"), 200):
                 self.schema(f"{item_path}.id")
             identities.append(_json_identity(owner))
         if len(identities) != len(set(identities)):
             self.schema(path)
-
-    def standard(self, value: Any, path: str) -> None:
-        from modularity_semantics import check_standard_shape
-
-        check_standard_shape(self, value, path)
 
     def source(self, value: Any, path: str) -> None:
         allowed = {"repository", "revision", "path", "manifest"}
@@ -340,26 +360,6 @@ class Validator:
             for index, contract in enumerate(contracts):
                 self.contract(contract, f"{path}.contracts[{index}]")
 
-    def link(self, value: Any, path: str) -> None:
-        from modularity_semantics import check_link_shape
-
-        check_link_shape(self, value, path)
-
-    def policies(self, value: Any, path: str) -> None:
-        from modularity_semantics import check_policies
-
-        check_policies(self, value, path)
-
-    def analysis_scope(self, value: Any, path: str) -> None:
-        from modularity_semantics import check_analysis_scope
-
-        check_analysis_scope(self, value, path)
-
-    def conformance(self, value: Any, path: str) -> None:
-        from modularity_semantics import check_conformance
-
-        check_conformance(self, value, path)
-
     def document_shape(self, document: Any) -> None:
         if not self.object_shape(document, "$", ROOT_FIELDS, ROOT_REQUIRED):
             return
@@ -370,7 +370,7 @@ class Validator:
             self.schema("$.version")
         if "$schema" in document and not _is_uri(document["$schema"]):
             self.schema("$.$schema")
-        if "description" in document and (not isinstance(document["description"], str) or not document["description"] or len(document["description"]) > 1000):
+        if "description" in document and not _valid_str(document["description"], 1000):
             self.schema("$.description")
         self.owners(document.get("owners"), "$.owners")
         standards = document.get("standards")
@@ -378,7 +378,7 @@ class Validator:
             self.schema("$.standards")
         else:
             for index, standard in enumerate(standards):
-                self.standard(standard, f"$.standards[{index}]")
+                _ms.check_standard_shape(self, standard, f"$.standards[{index}]")
             identities = [_json_identity(item) for item in standards]
             if len(identities) != len(set(identities)):
                 self.schema("$.standards")
@@ -393,25 +393,18 @@ class Validator:
             self.schema("$.links")
         else:
             for index, link in enumerate(links):
-                self.link(link, f"$.links[{index}]")
-        self.policies(document.get("policies"), "$.policies")
+                _ms.check_link_shape(self, link, f"$.links[{index}]")
+        _ms.check_policies(self, document.get("policies"), "$.policies")
         if "analysisScope" in document:
-            self.analysis_scope(document["analysisScope"], "$.analysisScope")
-        self.conformance(document.get("conformance"), "$.conformance")
+            _ms.check_analysis_scope(self, document["analysisScope"], "$.analysisScope")
+        _ms.check_conformance(self, document.get("conformance"), "$.conformance")
 
     def local_digest(self, contract: dict[str, Any], path: str) -> None:
-        from modularity_semantics import check_local_digest
-
-        check_local_digest(self, contract, path)
-
-    def semantics(self, document: Any) -> None:
-        from modularity_semantics import evaluate_semantics
-
-        evaluate_semantics(self, document)
+        _ms.check_local_digest(self, contract, path)
 
     def validate(self, document: Any) -> list[Finding]:
         self.document_shape(document)
-        self.semantics(document)
+        _ms.evaluate_semantics(self, document)
         return sorted(self.findings)
 
 
@@ -419,23 +412,27 @@ def validate_document(document: Any, root: Path | None = None) -> list[Finding]:
     return Validator(root=root).validate(document)
 
 
+def _walk_has_symlink(base: Path, parts: Sequence[str]) -> bool:
+    cur = base
+    for part in parts:
+        cur = cur / part
+        if stat.S_ISLNK(os.lstat(cur).st_mode):
+            return True
+    return False
+
+
 def _has_ancestor_symlink(path: Path, root: Path | None) -> bool:
     if not path.is_absolute():
-        cur = Path()
-        for part in path.parts:
-            cur = cur / part
-            if stat.S_ISLNK(os.lstat(cur).st_mode):
-                return True
+        if _walk_has_symlink(Path(), path.parts):
+            return True
+    elif any(stat.S_ISLNK(os.lstat(anc).st_mode) for anc in path.parents if len(anc.parts) > 2):
+        return True
     if root is not None:
         root_res = root.resolve()
         cand = path if path.is_absolute() else (Path.cwd() / path)
         rel = cand.relative_to(root) if cand.is_relative_to(root) else (cand.relative_to(root_res) if cand.is_relative_to(root_res) else None)
-        if rel is not None:
-            cur = root_res
-            for part in rel.parts:
-                cur = cur / part
-                if stat.S_ISLNK(os.lstat(cur).st_mode):
-                    return True
+        if rel is not None and _walk_has_symlink(root_res, rel.parts):
+            return True
     return False
 
 
