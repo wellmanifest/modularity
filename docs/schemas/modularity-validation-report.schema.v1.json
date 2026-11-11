@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://subactor.dev/schemas/modularity-validation-report/v1",
+  "title": "Subactor Modularity Validation Report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "document",
+    "valid",
+    "findings"
+  ],
+  "properties": {
+    "schema": {
+      "const": "subactor.modularity/validation-report/v1"
+    },
+    "document": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "valid": {
+      "type": "boolean"
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/finding"
+      }
+    }
+  },
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "severity",
+        "path",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^MOD-[A-Z]+-[0-9]{3}$"
+        },
+        "severity": {
+          "enum": [
+            "error",
+            "critical"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      }
+    }
+  }
+}
