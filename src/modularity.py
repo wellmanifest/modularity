@@ -4,15 +4,13 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
-import fnmatch
-import hashlib
 import json
 import re
 import sys
-from collections import Counter, defaultdict
+from collections.abc import Iterable, Sequence
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Iterable, Sequence
+from typing import Any
 from urllib.parse import urlparse
 
 if str(Path(__file__).resolve().parent) not in sys.path:
@@ -20,6 +18,7 @@ if str(Path(__file__).resolve().parent) not in sys.path:
 
 
 IDENTIFIER = re.compile(r"^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$")
+URI_SCHEME = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*$")
 SEMVER = re.compile(
     r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
     r"(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?"
@@ -64,13 +63,9 @@ class Finding:
 
 @lru_cache(maxsize=1)
 def _catalog() -> dict[str, tuple[str, str]]:
-    catalog_path = (
-        Path(__file__).resolve().parents[1] / "docs" / "errors" / "catalog.json"
-    )
+    catalog_path = Path(__file__).resolve().parents[1] / "docs" / "errors" / "catalog.json"
     data = json.loads(catalog_path.read_text(encoding="utf-8"))
-    return {
-        item["code"]: (item["severity"], item["message"]) for item in data["errors"]
-    }
+    return {item["code"]: (item["severity"], item["message"]) for item in data["errors"]}
 
 
 def _finding(code: str, path: str) -> Finding:
@@ -80,7 +75,6 @@ def _finding(code: str, path: str) -> Finding:
 
 def _internal_finding() -> Finding:
     """Return the fail-safe diagnostic without depending on the catalog."""
-
     return Finding(
         path="$",
         code="MOD-INTERNAL-001",
@@ -100,21 +94,27 @@ def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 
 def load_json_bytes(raw: bytes) -> Any:
     """Parse strict UTF-8 JSON and reject duplicate object keys."""
-
-    text = raw.decode("utf-8", errors="strict")
-    return json.loads(text, object_pairs_hook=_unique_object)
+    return json.loads(raw.decode("utf-8", errors="strict"), object_pairs_hook=_unique_object)
 
 
 def _is_uri(value: Any) -> bool:
-    return isinstance(value, str) and bool(urlparse(value).scheme)
+    if not isinstance(value, str) or not value or len(value) > 2048:
+        return False
+    if any(ch.isspace() or ord(ch) < 32 or ord(ch) == 127 for ch in value):
+        return False
+    try:
+        parsed = urlparse(value)
+    except ValueError:
+        return False
+    if not parsed.scheme or not URI_SCHEME.fullmatch(parsed.scheme):
+        return False
+    if value[len(parsed.scheme) :].startswith("://"):
+        return bool(parsed.netloc)
+    return bool(parsed.netloc or parsed.path)
 
 
 def _is_identifier(value: Any) -> bool:
-    return (
-        isinstance(value, str)
-        and len(value) <= 160
-        and bool(IDENTIFIER.fullmatch(value))
-    )
+    return isinstance(value, str) and len(value) <= 160 and bool(IDENTIFIER.fullmatch(value))
 
 
 def _is_semver(value: Any) -> bool:
@@ -134,7 +134,9 @@ def _is_relative_path(value: Any) -> bool:
         return False
     if value.startswith("/") or "\\" in value:
         return False
-    return ".." not in value.split("/")
+    if any(ord(ch) < 32 or ord(ch) == 127 for ch in value):
+        return False
+    return all(part not in {"", ".", ".."} for part in value.split("/"))
 
 
 def _json_identity(value: Any) -> str:
@@ -385,9 +387,8 @@ class Validator:
         else:
             for index, standard in enumerate(standards):
                 self.standard(standard, f"$.standards[{index}]")
-            if len([_json_identity(item) for item in standards]) != len(
-                set(_json_identity(item) for item in standards)
-            ):
+            identities = [_json_identity(item) for item in standards]
+            if len(identities) != len(set(identities)):
                 self.schema("$.standards")
         modules = document.get("modules")
         if not isinstance(modules, list) or not modules:
@@ -478,7 +479,7 @@ def main(argv: Iterable[str] | None = None) -> int:
         )
         sys.stdout.write(f"{report}\n")
         return 1 if findings else 0
-    except Exception:
+    except Exception:  # noqa: BLE001
         finding = _internal_finding()
         report = (
             render_json(args.document, [finding])
