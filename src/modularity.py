@@ -6,6 +6,7 @@ import argparse
 import dataclasses
 import errno
 import json
+import math
 import os
 import re
 import stat
@@ -90,6 +91,13 @@ def _reject_json_constant(token: str) -> Any:
     raise ValueError(f"Non-finite JSON constant is forbidden: {token}")
 
 
+def _parse_finite_float(token: str) -> float:
+    parsed = float(token)
+    if not math.isfinite(parsed):
+        raise ValueError(f"Non-finite JSON float is forbidden: {token}")
+    return parsed
+
+
 def _enforce_json_depth(value: Any, max_depth: int = MAX_JSON_DEPTH) -> None:
     stack: list[tuple[Any, int]] = [(value, 0)]
     while stack:
@@ -97,13 +105,15 @@ def _enforce_json_depth(value: Any, max_depth: int = MAX_JSON_DEPTH) -> None:
         if depth > max_depth:
             raise ValueError("JSON nesting depth exceeds maximum bound")
         if isinstance(current, dict):
-            for child in current.values():
-                if isinstance(child, (dict, list)):
-                    stack.append((child, depth + 1))
+            for key, child in current.items():
+                if not isinstance(key, str):
+                    raise TypeError("JSON object keys must be strings")
+                stack.append((child, depth + 1))
         elif isinstance(current, list):
             for child in current:
-                if isinstance(child, (dict, list)):
-                    stack.append((child, depth + 1))
+                stack.append((child, depth + 1))
+        elif isinstance(current, float) and not math.isfinite(current):
+            raise ValueError("Non-finite JSON float is forbidden")
 
 
 def read_regular_file_bytes(path: Path) -> bytes:
@@ -141,6 +151,7 @@ def load_json_bytes(raw: bytes) -> Any:
             text,
             object_pairs_hook=_unique_object,
             parse_constant=_reject_json_constant,
+            parse_float=_parse_finite_float,
         )
     except RecursionError as exc:
         raise ValueError("JSON nesting depth exceeds maximum bound") from exc
@@ -247,7 +258,8 @@ class Validator:
             item_path = f"{path}[{index}]"
             if not self.object_shape(owner, item_path, {"kind", "id"}, {"kind", "id"}):
                 continue
-            if owner.get("kind") not in {"repository", "team", "person"}:
+            kind = owner.get("kind")
+            if not isinstance(kind, str) or kind not in {"repository", "team", "person"}:
                 self.schema(f"{item_path}.kind")
             owner_id = owner.get("id")
             if not isinstance(owner_id, str) or not owner_id or len(owner_id) > 200:
@@ -280,7 +292,11 @@ class Validator:
         self.identifier(value.get("id"), f"{path}.id")
         if not _is_uri(value.get("uri")):
             self.schema(f"{path}.uri")
-        if value.get("kind") not in {"dsl", "json-schema", "protobuf", "lifecycle", "poa-capability", "twin-trait", "other"}:
+        kind = value.get("kind")
+        valid_kinds = {
+            "dsl", "json-schema", "protobuf", "lifecycle", "poa-capability", "twin-trait", "other"
+        }
+        if not isinstance(kind, str) or kind not in valid_kinds:
             self.schema(f"{path}.kind")
         if not _is_semver(value.get("version")):
             self.schema(f"{path}.version")
@@ -407,7 +423,7 @@ def validate_document(document: Any, root: Path | None = None) -> list[Finding]:
 def validate_path(path: Path, root: Path | None = None) -> list[Finding]:
     try:
         document = load_json_bytes(read_regular_file_bytes(path))
-    except (OSError, UnicodeDecodeError, ValueError, DuplicateKeyError):
+    except (OSError, UnicodeDecodeError, TypeError, ValueError, DuplicateKeyError):
         return [_finding("MOD-JSON-001", "$")]
     return validate_document(document, root=root)
 
@@ -425,7 +441,9 @@ def render_json(path: Path, findings: Sequence[Finding]) -> str:
         "valid": not findings,
         "findings": [finding.as_dict() for finding in findings],
     }
-    return json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return json.dumps(
+        payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
+    )
 
 
 def _parser() -> argparse.ArgumentParser:

@@ -1,0 +1,87 @@
+{
+  "allowedPaths": [
+    "project/ticket-010/**",
+    "project/ticket-011/**",
+    "project/ticket-012/**",
+    "project/ticket-013/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "src/modularity.py",
+    "src/modularity_semantics.py",
+    "tests/test_modularity_hardening.py"
+  ],
+  "classification": {
+    "kind": "BUG",
+    "origin": "health",
+    "priority": "P1"
+  },
+  "conflictsWith": [],
+  "delivery": {
+    "acceptedBaseSha": "205bd884122cf4e84659f06d4a12a07918bf8d97",
+    "architecture": {
+      "components": [
+        {
+          "name": "modularity-validator",
+          "paths": [
+            "src/modularity.py",
+            "src/modularity_semantics.py",
+            "tests/test_modularity_hardening.py"
+          ]
+        }
+      ],
+      "dataChanges": [],
+      "decision": "Guard owner.kind, contract.kind, standard.relation, and standard.status with isinstance(..., str) before set membership, add _parse_finite_float and deep string-key/finite-float checks in src/modularity.py, walk ancestor components up to validator.root for symlinks before resolve() in check_local_digest, and close merged tickets 010-012.",
+      "interfaceChanges": [],
+      "responsibilityChanges": false,
+      "rollback": "Revert the ticket commit.",
+      "status": "accepted",
+      "ui": {
+        "evidence": [],
+        "impact": "none",
+        "states": []
+      }
+    },
+    "budgets": {
+      "maxAffectedComponents": 2,
+      "maxImplementationFiles": 5,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "complexity": "S",
+    "estimatedMinutes": 20,
+    "nonGoals": [
+      "No schema or diagnostic code additions."
+    ],
+    "outcome": "Deterministic MOD-SCHEMA-001 / MOD-JSON-001 / MOD-PATH-001 diagnostics on unhashable enums, float overflow, and intra-root contract symlinks, with all modules well below 500 lines.",
+    "runtimeDependencies": [],
+    "targetBranch": "main",
+    "validation": [
+      {
+        "commands": [
+          "PYTHONPATH=src pytest -q",
+          "ruff check src tests"
+        ],
+        "criterion": "AC-01",
+        "evidence": "Unit and adversarial hardening tests plus ruff lint pass cleanly."
+      },
+      {
+        "commands": [
+          "./project/governance-check.sh --base origin/main",
+          "wellman check"
+        ],
+        "criterion": "AC-03",
+        "evidence": "Governance and Wellman checks pass with 0 errors."
+      }
+    ]
+  },
+  "dependsOn": [],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "integrationTicket": null,
+  "schema": "new-project.intent/v3",
+  "stacks": [],
+  "summary": "Harden modularity unhashable enum guards, finite float parsing, and intra-root symlink digest rejection",
+  "ticket": "ticket-013",
+  "workstream": "application"
+}

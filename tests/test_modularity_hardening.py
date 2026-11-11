@@ -76,7 +76,11 @@ class HardeningRegressionTests(unittest.TestCase):
 
     def test_unhashable_and_heterogeneous_fields_emit_findings_without_type_error(self) -> None:
         doc = valid_document()
+        doc["owners"][0]["kind"] = ["team"]
+        doc["standards"][0]["relation"] = ["normative"]
+        doc["standards"][0]["status"] = ["published"]
         doc["modules"][0]["contracts"][0]["id"] = ["unhashable-id"]
+        doc["modules"][0]["contracts"][0]["kind"] = ["dsl"]
         doc["modules"][0]["layer"] = ["not-a-layer"]
         doc["modules"][1]["state"] = {"role": "projection", "domain": ["bad"], "owner": ["bad"]}
         doc["links"][0]["from"] = ["bad-from"]
@@ -87,6 +91,33 @@ class HardeningRegressionTests(unittest.TestCase):
         findings = modularity.validate_document(doc)
         self.assertIn("MOD-SCHEMA-001", {f.code for f in findings})
         self.assertNotIn("MOD-INTERNAL-001", {f.code for f in findings})
+
+    def test_json_loader_rejects_float_overflow_and_intra_root_symlink_contract_paths(self) -> None:
+        for payload in (b'{"a": 1e999}', b'{"a": -1e999}'):
+            with self.assertRaises(ValueError):
+                modularity.load_json_bytes(payload)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            real = root / "real_contract.json"
+            real.write_bytes(b'{"ok": true}')
+            intra_sym = root / "linked_contract.json"
+            intra_sym.symlink_to(real)
+
+            doc = valid_document()
+            doc["modules"][0]["contracts"][0]["path"] = "linked_contract.json"
+            found = {f.code for f in modularity.validate_document(doc, root=root)}
+            self.assertIn("MOD-PATH-001", found)
+
+            sub_dir = root / "real_dir"
+            sub_dir.mkdir()
+            (sub_dir / "nested.json").write_bytes(b'{"ok": true}')
+            sym_dir = root / "sym_dir"
+            sym_dir.symlink_to(sub_dir)
+            doc2 = valid_document()
+            doc2["modules"][0]["contracts"][0]["path"] = "sym_dir/nested.json"
+            found2 = {f.code for f in modularity.validate_document(doc2, root=root)}
+            self.assertIn("MOD-PATH-001", found2)
 
     def test_json_loader_rejects_nan_infinity_deep_nesting_symlinks_and_fifos(self) -> None:
         for payload in (
