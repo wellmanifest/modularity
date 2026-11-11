@@ -6,6 +6,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from test_modularity import contract, module, valid_document
 
@@ -149,6 +150,55 @@ class HardeningRegressionTests(unittest.TestCase):
                 doc["modules"][0]["contracts"][0]["path"] = "pipe.json"
                 found = {f.code for f in modularity.validate_document(doc, root=root)}
                 self.assertIn("MOD-PATH-001", found)
+
+    def test_inode_swap_ancestor_symlink_uri_dotdot_drive_paths_and_regex_anchors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            real_dir = root / "real_dir"
+            real_dir.mkdir()
+            doc_file = real_dir / "workspace.json"
+            doc_file.write_bytes(b"{}")
+            sym_dir = root / "sym_dir"
+            sym_dir.symlink_to(real_dir)
+            self.assertEqual(
+                [f.code for f in modularity.validate_path(sym_dir / "workspace.json", root=root)],
+                ["MOD-JSON-001"],
+            )
+
+            real_fstat = os.fstat
+
+            def swapped_fstat(fd: int) -> os.stat_result:
+                st = real_fstat(fd)
+                return os.stat_result(
+                    (
+                        st.st_mode,
+                        st.st_ino + 1,
+                        st.st_dev,
+                        st.st_nlink,
+                        st.st_uid,
+                        st.st_gid,
+                        st.st_size,
+                        st.st_atime,
+                        st.st_mtime,
+                        st.st_ctime,
+                    )
+                )
+
+            with (
+                mock.patch("modularity.os.fstat", side_effect=swapped_fstat),
+                self.assertRaises(OSError),
+            ):
+                modularity.read_regular_file_bytes(doc_file)
+
+        for bad_uri in (
+            "https://example.test/../escape",
+            "urn:subactor:../escape",
+            "http:///missing-host",
+        ):
+            self.assertFalse(modularity._is_uri(bad_uri), bad_uri)
+        self.assertFalse(modularity._is_relative_path("C:foo/bar"))
+        self.assertIsNone(modularity.REVISION.match("a" * 40 + "\n"))
+        self.assertIsNone(modularity.SEMVER.match("1.0.0\n"))
 
 
 if __name__ == "__main__":

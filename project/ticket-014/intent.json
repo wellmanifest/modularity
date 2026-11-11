@@ -1,0 +1,84 @@
+{
+  "allowedPaths": [
+    "project/ticket-009/README.md",
+    "project/ticket-013/README.md",
+    "project/ticket-014/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "src/modularity.py",
+    "tests/test_modularity_hardening.py"
+  ],
+  "classification": {
+    "kind": "BUG",
+    "origin": "health",
+    "priority": "P1"
+  },
+  "conflictsWith": [],
+  "delivery": {
+    "acceptedBaseSha": "65d70ab293649e705b7367529b61b9fd8e3ebeca",
+    "architecture": {
+      "components": [
+        {
+          "name": "modularity-validator",
+          "paths": [
+            "src/modularity.py",
+            "tests/test_modularity_hardening.py"
+          ]
+        }
+      ],
+      "dataChanges": [],
+      "decision": "Enforce lstat/fstat inode identity in read_regular_file_bytes, check ancestor symlinks in validate_path, reject '..' URI segments and Windows drive-letter relative paths, anchor regexes with \\Z, and reconcile merged tickets 009 and 013 to DONE.",
+      "interfaceChanges": [],
+      "responsibilityChanges": false,
+      "rollback": "Revert the ticket commit via protected PR delivery.",
+      "status": "accepted",
+      "ui": {
+        "evidence": [],
+        "impact": "none",
+        "states": []
+      }
+    },
+    "budgets": {
+      "maxAffectedComponents": 1,
+      "maxImplementationFiles": 4,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "complexity": "S",
+    "estimatedMinutes": 15,
+    "nonGoals": [
+      "No schema or diagnostic code additions."
+    ],
+    "outcome": "Deterministic rejection of inode swaps, ancestor symlinks, URI '..' traversal, and Windows drive-letter relative paths while keeping all modules below 500 lines and closing stale merged ticket headers.",
+    "runtimeDependencies": [],
+    "targetBranch": "main",
+    "validation": [
+      {
+        "commands": [
+          "PYTHONPATH=src:tests pytest -q",
+          "ruff check --no-cache src tests"
+        ],
+        "criterion": "AC-01",
+        "evidence": "project/ticket-014/README.md"
+      },
+      {
+        "commands": [
+          "./project/governance-check.sh --base origin/main",
+          "wellman check"
+        ],
+        "criterion": "AC-03",
+        "evidence": "project/ticket-014/README.md"
+      }
+    ]
+  },
+  "dependsOn": [],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "integrationTicket": null,
+  "schema": "new-project.intent/v3",
+  "stacks": [],
+  "summary": "Harden modularity regular-file inode stability, ancestor symlinks, and URI/path bounds",
+  "ticket": "ticket-014",
+  "workstream": "application"
+}

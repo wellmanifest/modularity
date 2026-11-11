@@ -2,8 +2,8 @@
 
 - **ID**: ticket-009
 - **Owner**: agent:antigravity under SESSION_EXECUTION_AUTHORIZATION
-- **Status**: IN_PROGRESS
-- **Workflow state**: EDIT
+- **Status**: DONE
+- **Workflow state**: MERGED
 - **Created**: 2026-11-02
 
 ## Goal and scope
