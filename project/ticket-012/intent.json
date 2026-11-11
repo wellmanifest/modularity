@@ -1,0 +1,86 @@
+{
+  "allowedPaths": [
+    "project/ticket-012/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "src/modularity.py",
+    "src/modularity_semantics.py",
+    "tests/test_modularity.py",
+    "tests/test_modularity_hardening.py"
+  ],
+  "classification": {
+    "kind": "BUG",
+    "origin": "health",
+    "priority": "P1"
+  },
+  "conflictsWith": [],
+  "delivery": {
+    "acceptedBaseSha": "dcb603560c1dea548263c07ea596b9ad72dedcab",
+    "architecture": {
+      "components": [
+        {
+          "name": "modularity-validator",
+          "paths": [
+            "src/modularity.py",
+            "src/modularity_semantics.py",
+            "tests/test_modularity.py",
+            "tests/test_modularity_hardening.py"
+          ]
+        }
+      ],
+      "dataChanges": [],
+      "decision": "Replace recursive DFS cycle detection with iterative Tarjan strongly connected components, guard semantic lookups against unhashable non-scalar field values, enforce bounded regular-file O_NOFOLLOW JSON/digest reads plus NaN/Infinity and JSON depth rejection, and keep all modules comfortably under 500 lines.",
+      "interfaceChanges": [],
+      "responsibilityChanges": false,
+      "rollback": "Revert the ticket commit.",
+      "status": "accepted",
+      "ui": {
+        "evidence": [],
+        "impact": "none",
+        "states": []
+      }
+    },
+    "budgets": {
+      "maxAffectedComponents": 2,
+      "maxImplementationFiles": 5,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "complexity": "S",
+    "estimatedMinutes": 20,
+    "nonGoals": [
+      "No schema or diagnostic code additions."
+    ],
+    "outcome": "Exact iterative SCC cycle diagnostics without missed multi-branch cycles or false cross-SCC bridge findings, zero TypeError/RecursionError crashes on malformed inputs, bounded regular-file I/O, and sub-500-line modules.",
+    "runtimeDependencies": [],
+    "targetBranch": "main",
+    "validation": [
+      {
+        "commands": [
+          "PYTHONPATH=src pytest -q",
+          "ruff check src tests"
+        ],
+        "criterion": "AC-01",
+        "evidence": "Unit and adversarial hardening tests plus ruff lint pass cleanly."
+      },
+      {
+        "commands": [
+          "./project/governance-check.sh --base origin/main",
+          "wellman check"
+        ],
+        "criterion": "AC-03",
+        "evidence": "Governance and Wellman checks pass with 0 errors."
+      }
+    ]
+  },
+  "dependsOn": [],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "integrationTicket": null,
+  "schema": "new-project.intent/v3",
+  "stacks": [],
+  "summary": "Harden SCC cycle detection, unhashable field guards, and bounded JSON I/O",
+  "ticket": "ticket-012",
+  "workstream": "application"
+}
