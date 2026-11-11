@@ -5,30 +5,16 @@ from __future__ import annotations
 import fnmatch
 import hashlib
 from collections import Counter, defaultdict
-from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
 
-import re
-from modularity import _glob_covers, _is_digest, _is_relative_path
-
-IDENTIFIER = re.compile(r"^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$")
-DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
-LAYER_ORDER = {
-    "foundation": 0,
-    "domain": 1,
-    "application": 2,
-    "interface": 3,
-    "deployment": 4,
-}
-
-
-def _is_uri(value: Any) -> bool:
-    return isinstance(value, str) and bool(urlparse(value).scheme)
-
-
-def _is_identifier(value: Any) -> bool:
-    return isinstance(value, str) and len(value) <= 160 and bool(IDENTIFIER.fullmatch(value))
+from modularity import (
+    LAYER_ORDER,
+    _glob_covers,
+    _is_digest,
+    _is_identifier,
+    _is_relative_path,
+    _is_uri,
+)
 
 
 def check_local_digest(validator: Any, contract: dict[str, Any], path: str) -> None:
@@ -36,15 +22,24 @@ def check_local_digest(validator: Any, contract: dict[str, Any], path: str) -> N
     digest = contract.get("digest")
     if validator.root is None or not _is_relative_path(relative) or not _is_digest(digest):
         return
-    candidate = (validator.root / relative).resolve()
+    raw_candidate = validator.root / relative
     try:
+        has_entry = raw_candidate.is_symlink() or raw_candidate.exists()
+        candidate = raw_candidate.resolve(strict=has_entry)
         candidate.relative_to(validator.root)
-    except ValueError:
+    except (OSError, RuntimeError, ValueError):
         validator.add("MOD-PATH-001", f"{path}.path")
         return
-    if not candidate.is_file():
+    if not has_entry:
         return
-    observed = "sha256:" + hashlib.sha256(candidate.read_bytes()).hexdigest()
+    try:
+        if not candidate.is_file():
+            validator.add("MOD-PATH-001", f"{path}.path")
+            return
+        observed = "sha256:" + hashlib.sha256(candidate.read_bytes()).hexdigest()
+    except OSError:
+        validator.add("MOD-PATH-001", f"{path}.path")
+        return
     if observed != digest:
         validator.add("MOD-DIGEST-001", f"{path}.digest")
 
@@ -134,8 +129,19 @@ def evaluate_semantics(validator: Any, document: Any) -> None:
             validator.add("MOD-POA-001", link_path)
         generation = link.get("generation")
         if link.get("mode") == "generate" and isinstance(generation, dict):
+            generator_id = generation.get("generator")
+            if _is_identifier(generator_id) and generator_id not in module_by_id:
+                validator.add("MOD-COMPOSE-001", f"{link_path}.generation.generator")
             output_exports = contracts_by_uri.get(generation.get("outputContract"), [])
-            if len(output_exports) != 1:
+            if (
+                len(output_exports) != 1
+                or output_exports[0][1].get("uri") == link.get("contract")
+                or (
+                    _is_identifier(generator_id)
+                    and generator_id in module_by_id
+                    and output_exports[0][0].get("id") != generator_id
+                )
+            ):
                 validator.add("MOD-COMPOSE-001", f"{link_path}.generation.outputContract")
 
     visiting: set[str] = set()
@@ -255,7 +261,7 @@ def check_conformance(validator: Any, value: Any, path: str) -> None:
     allowed_levels = {"document", "graph", "standards", "interfaces", "advisory"}
     if (
         not isinstance(levels, list) or not levels
-        or len(levels) != len(set(item for item in levels if isinstance(item, str)))
+        or len(levels) != len({item for item in levels if isinstance(item, str)})
         or any(not isinstance(item, str) or item not in allowed_levels for item in levels)
     ):
         validator.schema(f"{path}.levels")

@@ -1,0 +1,84 @@
+{
+  "allowedPaths": [
+    "project/ticket-011/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "src/modularity.py",
+    "src/modularity_semantics.py",
+    "tests/test_modularity.py"
+  ],
+  "classification": {
+    "kind": "BUG",
+    "origin": "health",
+    "priority": "P1"
+  },
+  "conflictsWith": [],
+  "delivery": {
+    "acceptedBaseSha": "c9a8b5900787a7fdfdd6096ea52d6f1a0803d7c5",
+    "architecture": {
+      "components": [
+        {
+          "name": "modularity-validator",
+          "paths": [
+            "src/modularity.py",
+            "src/modularity_semantics.py",
+            "tests/test_modularity.py"
+          ]
+        }
+      ],
+      "dataChanges": [],
+      "decision": "Harden _is_uri, _is_relative_path, and check_local_digest against exception-inducing inputs, enforce generator module and outputContract ownership on generate links, and share all primitive validators from modularity.py.",
+      "interfaceChanges": [],
+      "responsibilityChanges": false,
+      "rollback": "Revert the ticket commit.",
+      "status": "accepted",
+      "ui": {
+        "evidence": [],
+        "impact": "none",
+        "states": []
+      }
+    },
+    "budgets": {
+      "maxAffectedComponents": 2,
+      "maxImplementationFiles": 5,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "complexity": "S",
+    "estimatedMinutes": 20,
+    "nonGoals": [
+      "No schema or diagnostic code additions."
+    ],
+    "outcome": "Deterministic schema/path/composition diagnostics without internal crashes, full generator provenance validation, and complete SSOT helper sharing.",
+    "runtimeDependencies": [],
+    "targetBranch": "main",
+    "validation": [
+      {
+        "commands": [
+          "pytest -q",
+          "ruff check src tests"
+        ],
+        "criterion": "AC-01",
+        "evidence": "Unit tests and ruff lint pass cleanly."
+      },
+      {
+        "commands": [
+          "./project/governance-check.sh --base origin/main",
+          "wellman check"
+        ],
+        "criterion": "AC-04",
+        "evidence": "Governance and Wellman checks pass with 0 errors."
+      }
+    ]
+  },
+  "dependsOn": [],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "integrationTicket": null,
+  "schema": "new-project.intent/v3",
+  "stacks": [],
+  "summary": "Harden URI/path parsing, generator provenance resolution, and SSOT helpers",
+  "ticket": "ticket-011",
+  "workstream": "application"
+}

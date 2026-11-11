@@ -12,7 +12,6 @@ from unittest import mock
 
 import modularity
 
-
 REVISION = "a" * 40
 DIGEST = "sha256:" + "0" * 64
 
@@ -278,6 +277,16 @@ class GraphValidationTests(unittest.TestCase):
         document = valid_document()
         document["links"][3]["generation"]["outputContract"] = "urn:missing"
         self.assertIn("MOD-COMPOSE-001", codes(document))
+        document = valid_document()
+        document["links"][3]["generation"]["generator"] = "missing-generator"
+        self.assertIn("MOD-COMPOSE-001", codes(document))
+        document = valid_document()
+        document["links"][3]["generation"]["generator"] = "executor"
+        self.assertIn("MOD-COMPOSE-001", codes(document))
+        document = valid_document()
+        document["links"][3]["generation"]["generator"] = "core"
+        document["links"][3]["generation"]["outputContract"] = document["links"][3]["contract"]
+        self.assertIn("MOD-COMPOSE-001", codes(document))
 
 
 class IntegrityAndReportingTests(unittest.TestCase):
@@ -354,28 +363,50 @@ class IntegrityAndReportingTests(unittest.TestCase):
 
     def test_unexpected_failure_is_exit_two(self) -> None:
         error = io.StringIO()
-        with mock.patch("modularity.validate_path", side_effect=RuntimeError("boom")):
-            with redirect_stderr(error):
-                self.assertEqual(modularity.main(["workspace.json"]), 2)
+        with (
+            mock.patch("modularity.validate_path", side_effect=RuntimeError("boom")),
+            redirect_stderr(error),
+        ):
+            self.assertEqual(modularity.main(["workspace.json"]), 2)
         self.assertIn("MOD-INTERNAL-001", error.getvalue())
 
     def test_internal_report_does_not_depend_on_error_catalog(self) -> None:
         error = io.StringIO()
         with mock.patch(
             "modularity.validate_path", side_effect=RuntimeError("catalog unavailable")
-        ):
-            with mock.patch(
-                "modularity._catalog", side_effect=RuntimeError("catalog unavailable")
-            ):
-                with redirect_stderr(error):
-                    self.assertEqual(modularity.main(["workspace.json"]), 2)
+        ), mock.patch(
+            "modularity._catalog", side_effect=RuntimeError("catalog unavailable")
+        ), redirect_stderr(error):
+            self.assertEqual(modularity.main(["workspace.json"]), 2)
         self.assertIn("MOD-INTERNAL-001", error.getvalue())
 
 
+    def test_malformed_uris_and_unsafe_paths_do_not_raise_internal_errors(self) -> None:
+        for bad_uri in ("http://[invalid", "https://", "urn:", "https://example.com/a b", "https://example.com/\n"):
+            document = valid_document()
+            document["modules"][0]["source"]["repository"] = bad_uri
+            self.assertIn("MOD-SCHEMA-001", codes(document))
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for bad_path in ("foo\x00bar", ".", "./contract.json", "docs//contract.json", "docs/"):
+                document = valid_document()
+                document["modules"][0]["contracts"][0]["path"] = bad_path
+                self.assertIn("MOD-PATH-001", codes(document, root))
+
+            loop = root / "loop.json"
+            loop.symlink_to(loop)
+            document = valid_document()
+            document["modules"][0]["contracts"][0]["path"] = "loop.json"
+            self.assertIn("MOD-PATH-001", codes(document, root))
+
     def test_semantics_helpers_are_ssot_identical_with_modularity(self) -> None:
         import modularity_semantics
+        self.assertIs(modularity.LAYER_ORDER, modularity_semantics.LAYER_ORDER)
         self.assertIs(modularity._is_digest, modularity_semantics._is_digest)
+        self.assertIs(modularity._is_identifier, modularity_semantics._is_identifier)
         self.assertIs(modularity._is_relative_path, modularity_semantics._is_relative_path)
+        self.assertIs(modularity._is_uri, modularity_semantics._is_uri)
         self.assertIs(modularity._glob_covers, modularity_semantics._glob_covers)
 
 
