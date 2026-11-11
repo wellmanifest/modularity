@@ -23,16 +23,16 @@ if str(Path(__file__).resolve().parent) not in sys.path:
 MAX_FILE_BYTES = 4 * 1024 * 1024
 MAX_JSON_DEPTH = 64
 
-IDENTIFIER = re.compile(r"^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$")
-URI_SCHEME = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*$")
+IDENTIFIER = re.compile(r"^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*\Z")
+URI_SCHEME = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*\Z")
 SEMVER = re.compile(
     r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
     r"(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?"
-    r"(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$"
+    r"(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?\Z"
 )
-REVISION = re.compile(r"^[0-9a-f]{40}$")
-DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
-AUTHORITY = re.compile(r"^authority://[a-z0-9][a-z0-9.-]*(?:/[A-Za-z0-9._~-]+)+$")
+REVISION = re.compile(r"^[0-9a-f]{40}\Z")
+DIGEST = re.compile(r"^sha256:[0-9a-f]{64}\Z")
+AUTHORITY = re.compile(r"^authority://[a-z0-9][a-z0-9.-]*(?:/[A-Za-z0-9._~-]+)+\Z")
 LAYER_ORDER = {"foundation": 0, "domain": 1, "application": 2, "interface": 3, "deployment": 4}
 
 ROOT_FIELDS = {"$schema", "schema", "id", "version", "description", "owners", "standards", "modules", "links", "policies", "analysisScope", "conformance"}
@@ -70,12 +70,8 @@ def _finding(code: str, path: str) -> Finding:
 
 def _internal_finding() -> Finding:
     """Return the fail-safe diagnostic without depending on the catalog."""
-    return Finding(
-        path="$",
-        code="MOD-INTERNAL-001",
-        message="Validation stopped because of an unexpected internal failure.",
-        severity="critical",
-    )
+    msg = "Validation stopped because of an unexpected internal failure."
+    return Finding(path="$", code="MOD-INTERNAL-001", message=msg, severity="critical")
 
 
 def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -118,12 +114,15 @@ def _enforce_json_depth(value: Any, max_depth: int = MAX_JSON_DEPTH) -> None:
 
 def read_regular_file_bytes(path: Path) -> bytes:
     """Read a regular non-symlink file within MAX_FILE_BYTES without blocking on FIFOs."""
+    lst = os.lstat(path)
+    if stat.S_ISLNK(lst.st_mode):
+        raise OSError(errno.ELOOP, "Symlink is forbidden", str(path))
     flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
     fd = os.open(path, flags)
     try:
         st = os.fstat(fd)
-        if not stat.S_ISREG(st.st_mode):
-            raise OSError(errno.EINVAL, "Not a regular file", str(path))
+        if not stat.S_ISREG(st.st_mode) or (st.st_dev, st.st_ino) != (lst.st_dev, lst.st_ino):
+            raise OSError(errno.EINVAL, "Not a stable regular file", str(path))
         if st.st_size > MAX_FILE_BYTES:
             raise OSError(errno.EFBIG, "File exceeds maximum byte bound", str(path))
         chunks: list[bytes] = []
@@ -148,10 +147,8 @@ def load_json_bytes(raw: bytes) -> Any:
     text = raw.decode("utf-8", errors="strict")
     try:
         parsed = json.loads(
-            text,
-            object_pairs_hook=_unique_object,
-            parse_constant=_reject_json_constant,
-            parse_float=_parse_finite_float,
+            text, object_pairs_hook=_unique_object,
+            parse_constant=_reject_json_constant, parse_float=_parse_finite_float,
         )
     except RecursionError as exc:
         raise ValueError("JSON nesting depth exceeds maximum bound") from exc
@@ -169,6 +166,8 @@ def _is_uri(value: Any) -> bool:
     except ValueError:
         return False
     if not parsed.scheme or not URI_SCHEME.fullmatch(parsed.scheme):
+        return False
+    if ".." in re.split(r"[/:]", parsed.path):
         return False
     if value[len(parsed.scheme) :].startswith("://"):
         return bool(parsed.netloc)
@@ -194,7 +193,7 @@ def _is_digest(value: Any) -> bool:
 def _is_relative_path(value: Any) -> bool:
     if not isinstance(value, str) or not value or len(value) > 500:
         return False
-    if value.startswith("/") or "\\" in value:
+    if value.startswith("/") or "\\" in value or bool(re.match(r"^[A-Za-z]:", value)):
         return False
     if any(ord(ch) < 32 or ord(ch) == 127 for ch in value):
         return False
@@ -420,8 +419,30 @@ def validate_document(document: Any, root: Path | None = None) -> list[Finding]:
     return Validator(root=root).validate(document)
 
 
+def _has_ancestor_symlink(path: Path, root: Path | None) -> bool:
+    if not path.is_absolute():
+        cur = Path()
+        for part in path.parts:
+            cur = cur / part
+            if stat.S_ISLNK(os.lstat(cur).st_mode):
+                return True
+    if root is not None:
+        root_res = root.resolve()
+        cand = path if path.is_absolute() else (Path.cwd() / path)
+        rel = cand.relative_to(root) if cand.is_relative_to(root) else (cand.relative_to(root_res) if cand.is_relative_to(root_res) else None)
+        if rel is not None:
+            cur = root_res
+            for part in rel.parts:
+                cur = cur / part
+                if stat.S_ISLNK(os.lstat(cur).st_mode):
+                    return True
+    return False
+
+
 def validate_path(path: Path, root: Path | None = None) -> list[Finding]:
     try:
+        if _has_ancestor_symlink(path, root):
+            return [_finding("MOD-JSON-001", "$")]
         document = load_json_bytes(read_regular_file_bytes(path))
     except (OSError, UnicodeDecodeError, TypeError, ValueError, DuplicateKeyError):
         return [_finding("MOD-JSON-001", "$")]
@@ -437,13 +458,10 @@ def render_text(path: Path, findings: Sequence[Finding]) -> str:
 def render_json(path: Path, findings: Sequence[Finding]) -> str:
     payload = {
         "schema": "subactor.modularity/validation-report/v1",
-        "document": str(path),
-        "valid": not findings,
+        "document": str(path), "valid": not findings,
         "findings": [finding.as_dict() for finding in findings],
     }
-    return json.dumps(
-        payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
-    )
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
 
 
 def _parser() -> argparse.ArgumentParser:
