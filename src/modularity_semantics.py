@@ -26,9 +26,9 @@ def check_standard_shape(validator: Any, value: Any, path: str) -> None:
         return
     validator.identifier(value.get("id"), f"{path}.id")
     relation, status = value.get("relation"), value.get("status")
-    if relation not in {"normative", "informative"}:
+    if not isinstance(relation, str) or relation not in {"normative", "informative"}:
         validator.schema(f"{path}.relation")
-    if status not in {"published", "draft"}:
+    if not isinstance(status, str) or status not in {"published", "draft"}:
         validator.schema(f"{path}.status")
     if "repository" in value and not _is_uri(value["repository"]):
         validator.schema(f"{path}.repository")
@@ -86,8 +86,20 @@ def check_local_digest(validator: Any, contract: dict[str, Any], path: str) -> N
     if validator.root is None or not _is_relative_path(relative) or not _is_digest(digest):
         return
     raw_candidate = validator.root / relative
+    probe = raw_candidate
+    while True:
+        try:
+            if probe.is_symlink():
+                validator.add("MOD-PATH-001", f"{path}.path")
+                return
+        except OSError:
+            validator.add("MOD-PATH-001", f"{path}.path")
+            return
+        if probe == validator.root or probe.parent == probe:
+            break
+        probe = probe.parent
     try:
-        has_entry = raw_candidate.is_symlink() or raw_candidate.exists()
+        has_entry = raw_candidate.exists()
         candidate = raw_candidate.resolve(strict=has_entry)
         candidate.relative_to(validator.root)
     except (OSError, RuntimeError, ValueError):
