@@ -8,13 +8,76 @@ from collections import Counter, defaultdict
 from typing import Any
 
 from modularity import (
+    AUTHORITY,
     LAYER_ORDER,
     _glob_covers,
     _is_digest,
     _is_identifier,
     _is_relative_path,
+    _is_revision,
     _is_uri,
+    read_regular_file_bytes,
 )
+
+
+def check_standard_shape(validator: Any, value: Any, path: str) -> None:
+    allowed = {"id", "relation", "status", "repository", "revision", "artifact", "note"}
+    if not validator.object_shape(value, path, allowed, {"id", "relation", "status"}):
+        return
+    validator.identifier(value.get("id"), f"{path}.id")
+    relation, status = value.get("relation"), value.get("status")
+    if relation not in {"normative", "informative"}:
+        validator.schema(f"{path}.relation")
+    if status not in {"published", "draft"}:
+        validator.schema(f"{path}.status")
+    if "repository" in value and not _is_uri(value["repository"]):
+        validator.schema(f"{path}.repository")
+    if "artifact" in value and not _is_relative_path(value["artifact"]):
+        validator.add("MOD-PATH-001", f"{path}.artifact")
+    if "note" in value and (not isinstance(value["note"], str) or not value["note"] or len(value["note"]) > 1000):
+        validator.schema(f"{path}.note")
+    if relation == "normative":
+        if status != "published" or not _is_uri(value.get("repository")):
+            validator.add("MOD-STANDARD-001", path)
+        if not _is_revision(value.get("revision")) or not _is_relative_path(value.get("artifact")):
+            validator.add("MOD-STANDARD-001", path)
+    elif "revision" in value and not _is_revision(value["revision"]):
+        validator.add("MOD-STANDARD-001", f"{path}.revision")
+    if status == "draft" and (relation != "informative" or "revision" in value):
+        validator.add("MOD-STANDARD-001", path)
+
+
+def check_link_shape(validator: Any, value: Any, path: str) -> None:
+    allowed = {"id", "from", "to", "contract", "mode", "authorityRef", "generation"}
+    if not validator.object_shape(value, path, allowed, {"id", "from", "to", "contract", "mode"}):
+        return
+    for field in ("id", "from", "to"):
+        validator.identifier(value.get(field), f"{path}.{field}")
+    if not _is_uri(value.get("contract")):
+        validator.schema(f"{path}.contract")
+    mode = value.get("mode")
+    if not isinstance(mode, str) or mode not in {"link", "generate", "observe", "invoke"}:
+        validator.schema(f"{path}.mode")
+    has_authority = "authorityRef" in value
+    if mode == "invoke":
+        if not has_authority or not isinstance(value.get("authorityRef"), str) or not AUTHORITY.fullmatch(value["authorityRef"]):
+            validator.add("MOD-AUTH-001", f"{path}.authorityRef")
+    elif has_authority:
+        validator.add("MOD-AUTH-001", f"{path}.authorityRef")
+    has_generation = "generation" in value
+    if mode == "generate":
+        generation = value.get("generation")
+        if not isinstance(generation, dict):
+            validator.add("MOD-COMPOSE-001", f"{path}.generation")
+        else:
+            validator.object_shape(generation, f"{path}.generation", {"generator", "outputContract"}, {"generator", "outputContract"})
+            validator.identifier(generation.get("generator"), f"{path}.generation.generator")
+            if not _is_uri(generation.get("outputContract")):
+                validator.schema(f"{path}.generation.outputContract")
+            if not _is_identifier(generation.get("generator")) or not _is_uri(generation.get("outputContract")):
+                validator.add("MOD-COMPOSE-001", f"{path}.generation")
+    elif has_generation:
+        validator.add("MOD-COMPOSE-001", f"{path}.generation")
 
 
 def check_local_digest(validator: Any, contract: dict[str, Any], path: str) -> None:
@@ -33,15 +96,64 @@ def check_local_digest(validator: Any, contract: dict[str, Any], path: str) -> N
     if not has_entry:
         return
     try:
-        if not candidate.is_file():
-            validator.add("MOD-PATH-001", f"{path}.path")
-            return
-        observed = "sha256:" + hashlib.sha256(candidate.read_bytes()).hexdigest()
+        raw_bytes = read_regular_file_bytes(candidate)
     except OSError:
         validator.add("MOD-PATH-001", f"{path}.path")
         return
+    observed = "sha256:" + hashlib.sha256(raw_bytes).hexdigest()
     if observed != digest:
         validator.add("MOD-DIGEST-001", f"{path}.digest")
+
+
+def _cyclic_scc_map(adjacency: dict[str, set[str]]) -> dict[str, int]:
+    """Iterative Tarjan SCC returning node -> component_id for all cyclic components."""
+    index_counter = 0
+    indices: dict[str, int] = {}
+    lowlink: dict[str, int] = {}
+    stack: list[str] = []
+    on_stack: set[str] = set()
+    cyclic_scc: dict[str, int] = {}
+    comp_id = 0
+
+    for root in sorted(adjacency):
+        if root in indices:
+            continue
+        indices[root] = lowlink[root] = index_counter
+        index_counter += 1
+        stack.append(root)
+        on_stack.add(root)
+        frames: list[tuple[str, list[str], int]] = [(root, sorted(adjacency.get(root, set())), 0)]
+        while frames:
+            node, neighbors, pos = frames[-1]
+            if pos < len(neighbors):
+                frames[-1] = (node, neighbors, pos + 1)
+                nxt = neighbors[pos]
+                if nxt not in indices:
+                    indices[nxt] = lowlink[nxt] = index_counter
+                    index_counter += 1
+                    stack.append(nxt)
+                    on_stack.add(nxt)
+                    frames.append((nxt, sorted(adjacency.get(nxt, set())), 0))
+                elif nxt in on_stack:
+                    lowlink[node] = min(lowlink[node], indices[nxt])
+            else:
+                frames.pop()
+                if frames:
+                    parent = frames[-1][0]
+                    lowlink[parent] = min(lowlink[parent], lowlink[node])
+                if lowlink[node] == indices[node]:
+                    comp: list[str] = []
+                    while True:
+                        member = stack.pop()
+                        on_stack.remove(member)
+                        comp.append(member)
+                        if member == node:
+                            break
+                    if len(comp) > 1 or node in adjacency.get(node, set()):
+                        comp_id += 1
+                        for member in comp:
+                            cyclic_scc[member] = comp_id
+    return cyclic_scc
 
 
 def evaluate_semantics(validator: Any, document: Any) -> None:
@@ -56,13 +168,14 @@ def evaluate_semantics(validator: Any, document: Any) -> None:
     module_paths = {id(item): f"$.modules[{index}]" for index, item in enumerate(raw_modules) if isinstance(item, dict)}
     link_paths = {id(item): f"$.links[{index}]" for index, item in enumerate(raw_links) if isinstance(item, dict)}
 
-    all_ids = [item.get("id") for item in modules] + [item.get("id") for item in links if _is_identifier(item.get("id"))]
+    all_ids = [item["id"] for item in modules] + [item["id"] for item in links if _is_identifier(item.get("id"))]
     duplicate_ids = {item for item, count in Counter(all_ids).items() if count > 1}
     for module in modules:
-        if module.get("id") in duplicate_ids:
+        if module["id"] in duplicate_ids:
             validator.add("MOD-ID-001", f"{module_paths[id(module)]}.id")
     for link in links:
-        if link.get("id") in duplicate_ids:
+        link_id = link.get("id")
+        if isinstance(link_id, str) and link_id in duplicate_ids:
             validator.add("MOD-ID-001", f"{link_paths[id(link)]}.id")
 
     module_by_id: dict[str, dict[str, Any]] = {}
@@ -75,13 +188,14 @@ def evaluate_semantics(validator: Any, document: Any) -> None:
         contracts = module.get("contracts")
         if not isinstance(contracts, list):
             continue
-        local_ids = [item.get("id") for item in contracts if isinstance(item, dict)]
-        duplicate_local = {item for item, count in Counter(local_ids).items() if item is not None and count > 1}
+        local_ids = [item["id"] for item in contracts if isinstance(item, dict) and isinstance(item.get("id"), str)]
+        duplicate_local = {item for item, count in Counter(local_ids).items() if count > 1}
         for index, contract in enumerate(contracts):
             if not isinstance(contract, dict):
                 continue
             contract_path = f"{module_path}.contracts[{index}]"
-            if contract.get("id") in duplicate_local:
+            cid = contract.get("id")
+            if isinstance(cid, str) and cid in duplicate_local:
                 validator.add("MOD-CONTRACT-001", f"{contract_path}.id")
             uri = contract.get("uri")
             if _is_uri(uri):
@@ -97,25 +211,32 @@ def evaluate_semantics(validator: Any, document: Any) -> None:
         link_path = link_paths[id(link)]
         consumer_id = link.get("from")
         provider_id = link.get("to")
-        consumer = module_by_id.get(consumer_id)
-        provider = module_by_id.get(provider_id)
+        consumer = module_by_id.get(consumer_id) if isinstance(consumer_id, str) else None
+        provider = module_by_id.get(provider_id) if isinstance(provider_id, str) else None
         if consumer is None:
             validator.add("MOD-LINK-001", f"{link_path}.from")
         if provider is None:
             validator.add("MOD-LINK-001", f"{link_path}.to")
-        if consumer_id == provider_id and consumer is not None:
+        if consumer is not None and consumer_id == provider_id:
             validator.add("MOD-LINK-002", link_path)
         if consumer is None or provider is None:
             continue
+        assert isinstance(consumer_id, str) and isinstance(provider_id, str)
         adjacency[consumer_id].add(provider_id)
-        provider_exports = [item for item in contracts_by_uri.get(link.get("contract"), []) if item[0].get("id") == provider_id]
+        contract_uri = link.get("contract")
+        provider_exports = [
+            item for item in (contracts_by_uri.get(contract_uri, []) if isinstance(contract_uri, str) else [])
+            if item[0].get("id") == provider_id
+        ]
         if len(provider_exports) != 1:
             validator.add("MOD-CONTRACT-002", f"{link_path}.contract")
             contract = None
         else:
             contract = provider_exports[0][1]
-        consumer_layer = LAYER_ORDER.get(consumer.get("layer"))
-        provider_layer = LAYER_ORDER.get(provider.get("layer"))
+        c_layer = consumer.get("layer")
+        p_layer = provider.get("layer")
+        consumer_layer = LAYER_ORDER.get(c_layer) if isinstance(c_layer, str) else None
+        provider_layer = LAYER_ORDER.get(p_layer) if isinstance(p_layer, str) else None
         if consumer_layer is not None and provider_layer is not None and consumer_layer < provider_layer:
             validator.add("MOD-LAYER-001", link_path)
         lifecycle = provider.get("lifecycle")
@@ -132,10 +253,11 @@ def evaluate_semantics(validator: Any, document: Any) -> None:
             generator_id = generation.get("generator")
             if _is_identifier(generator_id) and generator_id not in module_by_id:
                 validator.add("MOD-COMPOSE-001", f"{link_path}.generation.generator")
-            output_exports = contracts_by_uri.get(generation.get("outputContract"), [])
+            out_uri = generation.get("outputContract")
+            output_exports = contracts_by_uri.get(out_uri, []) if isinstance(out_uri, str) else []
             if (
                 len(output_exports) != 1
-                or output_exports[0][1].get("uri") == link.get("contract")
+                or output_exports[0][1].get("uri") == contract_uri
                 or (
                     _is_identifier(generator_id)
                     and generator_id in module_by_id
@@ -144,28 +266,15 @@ def evaluate_semantics(validator: Any, document: Any) -> None:
             ):
                 validator.add("MOD-COMPOSE-001", f"{link_path}.generation.outputContract")
 
-    visiting: set[str] = set()
-    visited: set[str] = set()
-    cyclic: set[str] = set()
-
-    def visit(node: str, trail: list[str]) -> None:
-        if node in visiting:
-            cyclic.update(trail[trail.index(node):])
-            return
-        if node in visited:
-            return
-        visiting.add(node)
-        trail.append(node)
-        for neighbor in sorted(adjacency.get(node, set())):
-            visit(neighbor, trail)
-        trail.pop()
-        visiting.remove(node)
-        visited.add(node)
-
-    for module_id in sorted(adjacency):
-        visit(module_id, [])
+    cyclic_scc = _cyclic_scc_map(adjacency)
     for link in links:
-        if link.get("from") in cyclic and link.get("to") in cyclic:
+        src_id, dst_id = link.get("from"), link.get("to")
+        if (
+            isinstance(src_id, str)
+            and isinstance(dst_id, str)
+            and src_id in cyclic_scc
+            and cyclic_scc.get(src_id) == cyclic_scc.get(dst_id)
+        ):
             validator.add("MOD-GRAPH-001", link_paths[id(link)])
 
     state_owners: dict[str, list[str]] = defaultdict(list)
@@ -189,7 +298,7 @@ def evaluate_semantics(validator: Any, document: Any) -> None:
         if not isinstance(state, dict) or state.get("role") != "projection":
             continue
         domain = state.get("domain")
-        owners = state_owners.get(domain, [])
+        owners = state_owners.get(domain, []) if isinstance(domain, str) else []
         if len(owners) != 1 or state.get("owner") != owners[0]:
             validator.add("MOD-STATE-002", f"{module_paths[id(module)]}.state.owner")
 
@@ -230,7 +339,7 @@ def check_analysis_scope(validator: Any, value: Any, path: str) -> None:
             validator.add("MOD-ANALYSIS-001", f"{path}.{field}")
     managed = set(path_lists.get("managedPaths", []))
     generated = set(path_lists.get("generatedPaths", []))
-    if any(_glob_covers(l, r) or _glob_covers(r, l) for l in managed for r in generated):
+    if any(_glob_covers(left, right) or _glob_covers(right, left) for left in managed for right in generated):
         validator.add("MOD-ANALYSIS-001", path)
     includes = path_lists.get("includePaths", [])
     excludes = path_lists.get("excludePaths", [])
