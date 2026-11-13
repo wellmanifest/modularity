@@ -1,0 +1,87 @@
+{
+  "allowedPaths": [
+    "project/ticket-015/README.md",
+    "project/ticket-016/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    "src/modularity.py",
+    "src/modularity_io.py",
+    "src/modularity_semantics.py",
+    "tests/test_modularity_hardening.py"
+  ],
+  "classification": {
+    "kind": "BUG",
+    "origin": "health",
+    "priority": "P1"
+  },
+  "conflictsWith": [],
+  "delivery": {
+    "acceptedBaseSha": "f359da6d992f48ff8fee69e95251b33bdc7ca706",
+    "architecture": {
+      "components": [
+        {
+          "name": "modularity-validator",
+          "paths": [
+            "src/modularity.py",
+            "src/modularity_io.py",
+            "src/modularity_semantics.py",
+            "tests/test_modularity_hardening.py"
+          ]
+        }
+      ],
+      "dataChanges": [],
+      "decision": "Extract bounded regular-file I/O and strict JSON parsing into src/modularity_io.py, harden relative and un-normalized symlink-parent traversal checks, bound raw JSON integer digit counts before int() conversion, reject surrogates and ASCII control characters across owner IDs, descriptions, standard notes, and conformance commands, and mark merged ticket-015 DONE.",
+      "interfaceChanges": [],
+      "responsibilityChanges": false,
+      "rollback": "Revert the ticket commit via protected PR delivery.",
+      "status": "accepted",
+      "ui": {
+        "evidence": [],
+        "impact": "none",
+        "states": []
+      }
+    },
+    "budgets": {
+      "maxAffectedComponents": 1,
+      "maxImplementationFiles": 5,
+      "maxPublicInterfaceChanges": 0,
+      "maxRuntimeDependencies": 0
+    },
+    "complexity": "S",
+    "estimatedMinutes": 20,
+    "nonGoals": [
+      "No schema or diagnostic code additions."
+    ],
+    "outcome": "All src/*.py and tests/*.py modules stay well below 500 lines with hardened symlink-parent, JSON integer digit, surrogate, and control-character validation, and merged ticket-015 reconciled.",
+    "runtimeDependencies": [],
+    "targetBranch": "main",
+    "validation": [
+      {
+        "commands": [
+          "PYTHONPATH=src:tests pytest -q",
+          "ruff check --no-cache src tests"
+        ],
+        "criterion": "AC-01",
+        "evidence": "project/ticket-016/README.md"
+      },
+      {
+        "commands": [
+          "./project/governance-check.sh --base origin/main",
+          "wellman check"
+        ],
+        "criterion": "AC-03",
+        "evidence": "project/ticket-016/README.md"
+      }
+    ]
+  },
+  "dependsOn": [],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "integrationTicket": null,
+  "schema": "new-project.intent/v3",
+  "stacks": [],
+  "summary": "Modularize modularity_io and harden symlink traversal, JSON digit bounds, and control-character checks",
+  "ticket": "ticket-016",
+  "workstream": "application"
+}

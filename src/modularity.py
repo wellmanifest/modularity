@@ -4,47 +4,115 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
-import errno
 import json
-import math
-import os
-import re
-import stat
 import sys
 from collections.abc import Iterable, Sequence
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
 
 if str(Path(__file__).resolve().parent) not in sys.path:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-MAX_FILE_BYTES = 4 * 1024 * 1024
-MAX_JSON_DEPTH = 64
-MAX_JSON_INT_ABS = 10**400 - 1
-
-IDENTIFIER = re.compile(r"\A[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*\Z")
-URI_SCHEME = re.compile(r"\A[a-zA-Z][a-zA-Z0-9+.-]*\Z")
-SEMVER = re.compile(
-    r"\A(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
-    r"(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?"
-    r"(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?\Z"
+import modularity_semantics as _ms
+from modularity_io import (
+    AUTHORITY,
+    DIGEST,
+    IDENTIFIER,
+    LAYER_ORDER,
+    MAX_FILE_BYTES,
+    MAX_JSON_DEPTH,
+    MAX_JSON_INT_ABS,
+    MAX_JSON_INT_DIGITS,
+    REVISION,
+    SEMVER,
+    URI_SCHEME,
+    WINDOWS_DRIVE_PREFIX,
+    DuplicateKeyError,
+    _enforce_json_depth,
+    _glob_covers,
+    _has_ancestor_symlink,
+    _is_digest,
+    _is_identifier,
+    _is_relative_path,
+    _is_revision,
+    _is_semver,
+    _is_uri,
+    _is_utf8,
+    _json_identity,
+    _valid_prose_str,
+    _valid_single_line_str,
+    _valid_str,
+    load_json_bytes,
+    read_regular_file_bytes,
 )
-REVISION = re.compile(r"\A[0-9a-f]{40}\Z")
-DIGEST = re.compile(r"\Asha256:[0-9a-f]{64}\Z")
-AUTHORITY = re.compile(
-    r"\Aauthority://[a-z0-9][a-z0-9.-]*(?:/(?![.]{1,2}(?:/|\Z))[A-Za-z0-9._~-]+)+\Z"
-)
-WINDOWS_DRIVE_PREFIX = re.compile(r"\A[A-Za-z]:")
-LAYER_ORDER = {"foundation": 0, "domain": 1, "application": 2, "interface": 3, "deployment": 4}
 
-ROOT_FIELDS = {"$schema", "schema", "id", "version", "description", "owners", "standards", "modules", "links", "policies", "analysisScope", "conformance"}
-ROOT_REQUIRED = {"schema", "id", "version", "owners", "standards", "modules", "links", "policies", "conformance"}
+__all__ = [
+    "AUTHORITY",
+    "DIGEST",
+    "IDENTIFIER",
+    "LAYER_ORDER",
+    "MAX_FILE_BYTES",
+    "MAX_JSON_DEPTH",
+    "MAX_JSON_INT_ABS",
+    "MAX_JSON_INT_DIGITS",
+    "REVISION",
+    "ROOT_FIELDS",
+    "ROOT_REQUIRED",
+    "SEMVER",
+    "URI_SCHEME",
+    "WINDOWS_DRIVE_PREFIX",
+    "DuplicateKeyError",
+    "Finding",
+    "Validator",
+    "_enforce_json_depth",
+    "_glob_covers",
+    "_has_ancestor_symlink",
+    "_is_digest",
+    "_is_identifier",
+    "_is_relative_path",
+    "_is_revision",
+    "_is_semver",
+    "_is_uri",
+    "_is_utf8",
+    "_json_identity",
+    "_valid_prose_str",
+    "_valid_single_line_str",
+    "_valid_str",
+    "load_json_bytes",
+    "main",
+    "read_regular_file_bytes",
+    "render_json",
+    "render_text",
+    "validate_document",
+    "validate_path",
+]
 
-
-class DuplicateKeyError(ValueError):
-    """Raised when strict JSON parsing encounters a duplicate object key."""
+ROOT_FIELDS = {
+    "$schema",
+    "schema",
+    "id",
+    "version",
+    "description",
+    "owners",
+    "standards",
+    "modules",
+    "links",
+    "policies",
+    "analysisScope",
+    "conformance",
+}
+ROOT_REQUIRED = {
+    "schema",
+    "id",
+    "version",
+    "owners",
+    "standards",
+    "modules",
+    "links",
+    "policies",
+    "conformance",
+}
 
 
 @dataclasses.dataclass(frozen=True, order=True)
@@ -57,14 +125,23 @@ class Finding:
     severity: str = dataclasses.field(compare=False)
 
     def as_dict(self) -> dict[str, str]:
-        return {"code": self.code, "severity": self.severity, "path": self.path, "message": self.message}
+        return {
+            "code": self.code,
+            "severity": self.severity,
+            "path": self.path,
+            "message": self.message,
+        }
 
 
 @lru_cache(maxsize=1)
 def _catalog() -> dict[str, tuple[str, str]]:
-    catalog_path = Path(__file__).resolve().parents[1] / "docs" / "errors" / "catalog.json"
+    catalog_path = (
+        Path(__file__).resolve().parents[1] / "docs" / "errors" / "catalog.json"
+    )
     data = load_json_bytes(read_regular_file_bytes(catalog_path))
-    return {item["code"]: (item["severity"], item["message"]) for item in data["errors"]}
+    return {
+        item["code"]: (item["severity"], item["message"]) for item in data["errors"]
+    }
 
 
 def _finding(code: str, path: str) -> Finding:
@@ -76,171 +153,6 @@ def _internal_finding() -> Finding:
     """Return the fail-safe diagnostic without depending on the catalog."""
     msg = "Validation stopped because of an unexpected internal failure."
     return Finding(path="$", code="MOD-INTERNAL-001", message=msg, severity="critical")
-
-
-def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-    result: dict[str, Any] = {}
-    for key, value in pairs:
-        if key in result:
-            raise DuplicateKeyError(key)
-        result[key] = value
-    return result
-
-
-def _reject_json_constant(token: str) -> Any:
-    raise ValueError(f"Non-finite JSON constant is forbidden: {token}")
-
-
-def _parse_finite_float(token: str) -> float:
-    parsed = float(token)
-    if not math.isfinite(parsed):
-        raise ValueError(f"Non-finite JSON float is forbidden: {token}")
-    return parsed
-
-
-def _is_utf8(text: str) -> bool:
-    try:
-        text.encode("utf-8", errors="strict")
-        return True
-    except UnicodeEncodeError:
-        return False
-
-
-def _valid_str(value: Any, max_len: int) -> bool:
-    return isinstance(value, str) and 0 < len(value) <= max_len and _is_utf8(value)
-
-
-def _require_pos_int(max_bytes: int) -> None:
-    if isinstance(max_bytes, bool) or not isinstance(max_bytes, int) or max_bytes <= 0:
-        raise ValueError("max_bytes must be a positive integer")
-
-
-def _enforce_json_depth(value: Any, max_depth: int = MAX_JSON_DEPTH) -> None:
-    stack: list[tuple[Any, int]] = [(value, 0)]
-    while stack:
-        current, depth = stack.pop()
-        if depth > max_depth:
-            raise ValueError("JSON nesting depth exceeds maximum bound")
-        if isinstance(current, dict):
-            for key, child in current.items():
-                if not isinstance(key, str):
-                    raise TypeError("JSON object keys must be strings")
-                if not _is_utf8(key):
-                    raise ValueError("Lone UTF-16 surrogate is forbidden in JSON key")
-                stack.append((child, depth + 1))
-        elif isinstance(current, list):
-            for child in current:
-                stack.append((child, depth + 1))
-        elif isinstance(current, str):
-            if not _is_utf8(current):
-                raise ValueError("Lone UTF-16 surrogate is forbidden in JSON string")
-        elif type(current) is int and abs(current) > MAX_JSON_INT_ABS:
-            raise ValueError("JSON integer magnitude exceeds maximum bound")
-        elif isinstance(current, float) and not math.isfinite(current):
-            raise ValueError("Non-finite JSON float is forbidden")
-
-
-def read_regular_file_bytes(path: Path, max_bytes: int = MAX_FILE_BYTES) -> bytes:
-    """Read a regular non-symlink file within max_bytes without blocking on FIFOs."""
-    _require_pos_int(max_bytes)
-    lst = os.lstat(path)
-    if stat.S_ISLNK(lst.st_mode):
-        raise OSError(errno.ELOOP, "Symlink is forbidden", str(path))
-    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
-    fd = os.open(path, flags)
-    try:
-        st = os.fstat(fd)
-        if not stat.S_ISREG(st.st_mode) or (st.st_dev, st.st_ino) != (lst.st_dev, lst.st_ino):
-            raise OSError(errno.EINVAL, "Not a stable regular file", str(path))
-        if st.st_size > max_bytes:
-            raise OSError(errno.EFBIG, "File exceeds maximum byte bound", str(path))
-        chunks: list[bytes] = []
-        total = 0
-        while chunk := os.read(fd, min(65536, max_bytes + 1 - total)):
-            total += len(chunk)
-            if total > max_bytes:
-                raise OSError(errno.EFBIG, "File exceeds maximum byte bound", str(path))
-            chunks.append(chunk)
-        return b"".join(chunks)
-    finally:
-        os.close(fd)
-
-
-def load_json_bytes(raw: bytes, max_bytes: int = MAX_FILE_BYTES) -> Any:
-    """Parse strict UTF-8 JSON and reject duplicate keys, NaN/Infinity, and excessive depth."""
-    _require_pos_int(max_bytes)
-    if len(raw) > max_bytes:
-        raise ValueError("JSON payload exceeds maximum byte bound")
-    text = raw.decode("utf-8", errors="strict")
-    try:
-        parsed = json.loads(
-            text, object_pairs_hook=_unique_object,
-            parse_constant=_reject_json_constant, parse_float=_parse_finite_float,
-        )
-    except RecursionError as exc:
-        raise ValueError("JSON nesting depth exceeds maximum bound") from exc
-    _enforce_json_depth(parsed)
-    return parsed
-
-
-def _is_uri(value: Any) -> bool:
-    if not _valid_str(value, 2048) or any(ch.isspace() or ord(ch) < 32 or ord(ch) == 127 for ch in value):
-        return False
-    try:
-        parsed = urlparse(value)
-    except ValueError:
-        return False
-    if not parsed.scheme or not URI_SCHEME.fullmatch(parsed.scheme) or ({"." , ".."} & set(re.split(r"[/:]", parsed.path))):
-        return False
-    if value[len(parsed.scheme) :].startswith("://"):
-        return bool(parsed.netloc)
-    return bool(parsed.netloc or (parsed.path and "" not in parsed.path.split(":")))
-
-
-def _is_identifier(value: Any) -> bool:
-    return isinstance(value, str) and len(value) <= 160 and bool(IDENTIFIER.fullmatch(value))
-
-
-def _is_semver(value: Any) -> bool:
-    return isinstance(value, str) and bool(SEMVER.fullmatch(value))
-
-
-def _is_revision(value: Any) -> bool:
-    return isinstance(value, str) and bool(REVISION.fullmatch(value))
-
-
-def _is_digest(value: Any) -> bool:
-    return isinstance(value, str) and bool(DIGEST.fullmatch(value))
-
-
-def _is_relative_path(value: Any) -> bool:
-    if not _valid_str(value, 500):
-        return False
-    if value.startswith("/") or "\\" in value or bool(WINDOWS_DRIVE_PREFIX.match(value)):
-        return False
-    if any(ord(ch) < 32 or ord(ch) == 127 for ch in value):
-        return False
-    return all(part not in {"", ".", ".."} for part in value.split("/"))
-
-
-def _json_identity(value: Any) -> str:
-    try:
-        return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
-    except (TypeError, ValueError, RecursionError):
-        return f"repr:{type(value).__qualname__}:{value!r}"
-
-
-def _glob_covers(outer: str, inner: str) -> bool:
-    """Recognize only deterministic, obvious full containment of path globs."""
-    if outer in {"*", "**", "**/*"} or outer == inner:
-        return True
-    if outer.endswith("/**"):
-        prefix = outer[:-3].rstrip("/")
-        return inner == prefix or inner.startswith(prefix + "/")
-    return False
-
-
-import modularity_semantics as _ms
 
 
 class Validator:
@@ -256,7 +168,9 @@ class Validator:
     def schema(self, path: str) -> None:
         self.add("MOD-SCHEMA-001", path)
 
-    def object_shape(self, value: Any, path: str, allowed: set[str], required: set[str]) -> bool:
+    def object_shape(
+        self, value: Any, path: str, allowed: set[str], required: set[str]
+    ) -> bool:
         if not isinstance(value, dict):
             self.schema(path)
             return False
@@ -284,9 +198,13 @@ class Validator:
             if not self.object_shape(owner, item_path, {"kind", "id"}, {"kind", "id"}):
                 continue
             kind = owner.get("kind")
-            if not isinstance(kind, str) or kind not in {"repository", "team", "person"}:
+            if not isinstance(kind, str) or kind not in {
+                "repository",
+                "team",
+                "person",
+            }:
                 self.schema(f"{item_path}.kind")
-            if not _valid_str(owner.get("id"), 200):
+            if not _valid_single_line_str(owner.get("id"), 200):
                 self.schema(f"{item_path}.id")
             identities.append(_json_identity(owner))
         if len(identities) != len(set(identities)):
@@ -306,14 +224,22 @@ class Validator:
 
     def contract(self, value: Any, path: str) -> None:
         allowed = {"id", "uri", "kind", "version", "digest", "path"}
-        if not self.object_shape(value, path, allowed, {"id", "uri", "kind", "version", "digest"}):
+        if not self.object_shape(
+            value, path, allowed, {"id", "uri", "kind", "version", "digest"}
+        ):
             return
         self.identifier(value.get("id"), f"{path}.id")
         if not _is_uri(value.get("uri")):
             self.schema(f"{path}.uri")
         kind = value.get("kind")
         valid_kinds = {
-            "dsl", "json-schema", "protobuf", "lifecycle", "poa-capability", "twin-trait", "other"
+            "dsl",
+            "json-schema",
+            "protobuf",
+            "lifecycle",
+            "poa-capability",
+            "twin-trait",
+            "other",
         }
         if not isinstance(kind, str) or kind not in valid_kinds:
             self.schema(f"{path}.kind")
@@ -335,7 +261,9 @@ class Validator:
             self.object_shape(value, path, {"role", "domain"}, {"role", "domain"})
             self.identifier(value.get("domain"), f"{path}.domain")
         elif role == "projection":
-            self.object_shape(value, path, {"role", "domain", "owner"}, {"role", "domain", "owner"})
+            self.object_shape(
+                value, path, {"role", "domain", "owner"}, {"role", "domain", "owner"}
+            )
             self.identifier(value.get("domain"), f"{path}.domain")
             self.identifier(value.get("owner"), f"{path}.owner")
         else:
@@ -347,9 +275,19 @@ class Validator:
             return
         self.identifier(value.get("id"), f"{path}.id")
         self.owners(value.get("owners"), f"{path}.owners")
-        if not isinstance(value.get("layer"), str) or value.get("layer") not in LAYER_ORDER:
+        if (
+            not isinstance(value.get("layer"), str)
+            or value.get("layer") not in LAYER_ORDER
+        ):
             self.schema(f"{path}.layer")
-        if not isinstance(value.get("lifecycle"), str) or value.get("lifecycle") not in {"experimental", "stable", "deprecated", "retired"}:
+        if not isinstance(value.get("lifecycle"), str) or value.get(
+            "lifecycle"
+        ) not in {
+            "experimental",
+            "stable",
+            "deprecated",
+            "retired",
+        }:
             self.schema(f"{path}.lifecycle")
         self.source(value.get("source"), f"{path}.source")
         self.state(value.get("state"), f"{path}.state")
@@ -359,6 +297,26 @@ class Validator:
         else:
             for index, contract in enumerate(contracts):
                 self.contract(contract, f"{path}.contracts[{index}]")
+
+    def policies(self, value: Any, path: str) -> None:
+        expected: dict[str, Any] = {
+            "unknownFields": "reject",
+            "cycles": "reject",
+            "layerDirection": "higher-to-same-or-lower",
+            "contractOwnership": "single-exporter",
+            "stateOwnership": "single-writer",
+            "authority": "external-reference-only",
+            "twinAuthority": "observational-only",
+            "llmAuthority": "propose-only",
+        }
+        allowed = set(expected) | {"allowDeprecated"}
+        if not self.object_shape(value, path, allowed, allowed):
+            return
+        for field, wanted in expected.items():
+            if value.get(field) != wanted:
+                self.schema(f"{path}.{field}")
+        if not isinstance(value.get("allowDeprecated"), bool):
+            self.schema(f"{path}.allowDeprecated")
 
     def document_shape(self, document: Any) -> None:
         if not self.object_shape(document, "$", ROOT_FIELDS, ROOT_REQUIRED):
@@ -370,7 +328,9 @@ class Validator:
             self.schema("$.version")
         if "$schema" in document and not _is_uri(document["$schema"]):
             self.schema("$.$schema")
-        if "description" in document and not _valid_str(document["description"], 1000):
+        if "description" in document and not _valid_prose_str(
+            document["description"], 1000
+        ):
             self.schema("$.description")
         self.owners(document.get("owners"), "$.owners")
         standards = document.get("standards")
@@ -394,7 +354,7 @@ class Validator:
         else:
             for index, link in enumerate(links):
                 _ms.check_link_shape(self, link, f"$.links[{index}]")
-        _ms.check_policies(self, document.get("policies"), "$.policies")
+        self.policies(document.get("policies"), "$.policies")
         if "analysisScope" in document:
             _ms.check_analysis_scope(self, document["analysisScope"], "$.analysisScope")
         _ms.check_conformance(self, document.get("conformance"), "$.conformance")
@@ -412,35 +372,9 @@ def validate_document(document: Any, root: Path | None = None) -> list[Finding]:
     return Validator(root=root).validate(document)
 
 
-def _walk_has_symlink(base: Path, parts: Sequence[str]) -> bool:
-    cur = base
-    for part in parts:
-        cur = cur / part
-        if stat.S_ISLNK(os.lstat(cur).st_mode):
-            return True
-    return False
-
-
-def _has_ancestor_symlink(path: Path, root: Path | None) -> bool:
-    if not path.is_absolute():
-        if _walk_has_symlink(Path(), path.parts):
-            return True
-    elif any(stat.S_ISLNK(os.lstat(anc).st_mode) for anc in path.parents if len(anc.parts) > 2):
-        return True
-    if root is not None:
-        root_res = root.resolve()
-        cand = path if path.is_absolute() else (Path.cwd() / path)
-        rel = cand.relative_to(root) if cand.is_relative_to(root) else (cand.relative_to(root_res) if cand.is_relative_to(root_res) else None)
-        if rel is not None and _walk_has_symlink(root_res, rel.parts):
-            return True
-    return False
-
-
 def validate_path(path: Path, root: Path | None = None) -> list[Finding]:
     try:
-        if _has_ancestor_symlink(path, root):
-            return [_finding("MOD-JSON-001", "$")]
-        document = load_json_bytes(read_regular_file_bytes(path))
+        document = load_json_bytes(read_regular_file_bytes(path, root=root))
     except (OSError, UnicodeDecodeError, TypeError, ValueError, DuplicateKeyError):
         return [_finding("MOD-JSON-001", "$")]
     return validate_document(document, root=root)
@@ -449,22 +383,38 @@ def validate_path(path: Path, root: Path | None = None) -> list[Finding]:
 def render_text(path: Path, findings: Sequence[Finding]) -> str:
     if not findings:
         return f"PASS {path}: document,graph,standards"
-    return "\n".join(f"{finding.code} {finding.severity} {finding.path}: {finding.message}" for finding in findings)
+    return "\n".join(
+        f"{finding.code} {finding.severity} {finding.path}: {finding.message}"
+        for finding in findings
+    )
 
 
 def render_json(path: Path, findings: Sequence[Finding]) -> str:
     payload = {
         "schema": "subactor.modularity/validation-report/v1",
-        "document": str(path), "valid": not findings,
+        "document": str(path),
+        "valid": not findings,
         "findings": [finding.as_dict() for finding in findings],
     }
-    return json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
+    return json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    )
 
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="modularity", description=__doc__)
-    parser.add_argument("document", type=Path, help="canonical Modularity workspace JSON")
-    parser.add_argument("--root", type=Path, help="optional repository root for digest checks of artifacts that exist locally")
+    parser.add_argument(
+        "document", type=Path, help="canonical Modularity workspace JSON"
+    )
+    parser.add_argument(
+        "--root",
+        type=Path,
+        help="optional repository root for digest checks of artifacts that exist locally",
+    )
     parser.add_argument("--format", choices=("text", "json"), default="text")
     return parser
 
@@ -473,12 +423,20 @@ def main(argv: Iterable[str] | None = None) -> int:
     args = _parser().parse_args(list(argv) if argv is not None else None)
     try:
         findings = validate_path(args.document, root=args.root)
-        report = render_json(args.document, findings) if args.format == "json" else render_text(args.document, findings)
+        report = (
+            render_json(args.document, findings)
+            if args.format == "json"
+            else render_text(args.document, findings)
+        )
         sys.stdout.write(f"{report}\n")
         return 1 if findings else 0
     except Exception:  # noqa: BLE001
         finding = _internal_finding()
-        report = render_json(args.document, [finding]) if args.format == "json" else render_text(args.document, [finding])
+        report = (
+            render_json(args.document, [finding])
+            if args.format == "json"
+            else render_text(args.document, [finding])
+        )
         sys.stderr.write(f"{report}\n")
         return 2
 
